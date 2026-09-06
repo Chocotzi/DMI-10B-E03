@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "week": 1,
+  "commitSha": "PENDIENTE_SHA_EQUIPO",
+  "generatedAt": "2026-09-06T12:22:54-06:00",
+  "checks": [
+    {
+      "id": "falla-controlada",
+      "status": "fail",
+      "scenarioType": "failure",
+      "command": "npm run test:smoke",
+      "evidence": "Sintoma: `npm run test:smoke` termina con exit 1; la unica prueba ('renders the reproducible baseline and resolves backend state') falla en course-tests/smoke.test.tsx:16 con `expect(received).toContain(expected) // indexOf -- Expected substring: \"available\" -- Received string: \"Backend: offline\"`. El waitFor agota su tiempo porque el nodo con testID `backend-status` nunca llega a mostrar 'available'. Causa: en App.tsx los manejadores de la promesa de getBackendHealth() quedaron invertidos -- `.then(() => active && setStatus('offline'))` y `.catch(() => active && setStatus('available'))` --, de modo que un chequeo de salud EXITOSO ponia el estado en 'offline'. El defecto esta en la rama de exito del efecto useEffect, no en la red ni en la prueba (la prueba mockea src/api/courseBackend y getBackendHealth resuelve ok)."
+    },
+    {
+      "id": "correccion-verificada",
+      "status": "pass",
+      "scenarioType": "nominal",
+      "command": "npm run test:smoke",
+      "evidence": "Tras restaurar en App.tsx `.then(() => active && setStatus('available'))` y `.catch(() => active && setStatus('offline'))`, `npm run test:smoke` termina con exit 0: 'Tests: 1 passed, 1 total' y 'Test Suites: 1 passed, 1 total'. El nodo con testID `backend-status` renderiza 'Backend: available' y el waitFor de la prueba resuelve sin timeout. No se modifico ningun archivo de course-tests/; el unico cambio fue revertir las dos lineas de App.tsx a su forma original."
+    }
+  ]
+}

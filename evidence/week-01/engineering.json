@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "week": 1,
+  "commitSha": "PENDIENTE_SHA_EQUIPO",
+  "decision": "Para la falla controlada de la Semana 1 restringimos el cambio a codigo de aplicacion (App.tsx), sin tocar course-tests/ ni la configuracion del toolchain, y elegimos una falla de comportamiento en la maquina de estado del efecto de arranque (invertir los manejadores then/catch de getBackendHealth) que el smoke test detecta por su resultado observable, en lugar de romper typecheck/lint o el texto de la interfaz. Restriccion: la falla debe ser reversible en dos lineas, segura (sin datos ni servicios reales) y no puede alterar ninguna prueba (Riesgo 3 del registro y regla de la rubrica).",
+  "alternatives": [
+    "Introducir un error de tipo en src/api/courseBackend.ts para que falle `npm run typecheck`. Es reversible y detectable, pero ejercita el compilador y no la ruta de comportamiento de la app; el diagnostico no llega a distinguir sintoma de causa a nivel de flujo de estado, y es la clase de fallo que un IDE marca antes de correr nada.",
+    "Cambiar el literal de interfaz 'CampusOps' por 'Campus Ops' para que falle `view.getByText('CampusOps')` en el smoke test. Es trivial de revertir, pero es un cambio puramente cosmetico; la rubrica advierte que lo cosmetico no demuestra aportacion tecnica y el analisis sintoma/causa se reduce a una linea.",
+    "Invertir los manejadores `.then`/`.catch` de getBackendHealth() en App.tsx para que un chequeo de salud exitoso deje el estado en 'offline' (opcion elegida). El smoke test falla en el waitFor que exige 'available' y obliga a rastrear el defecto hasta la rama de exito del useEffect."
+  ],
+  "tradeoff": "Beneficio: la falla elegida obliga a leer la salida completa de jest y a distinguir que el sintoma (timeout esperando el texto 'available') no esta en la prueba ni en la red, sino en la rama de exito del efecto de React; es un ejercicio de diagnostico realista y alineado con el criterio de aceptacion de estado observable (criterios 1 y 3 de problem-definition.md). Costo: la causa no es evidente por inspeccion rapida, exige entender el flujo asincrono (useEffect + promesa + estado), un revisor apurado podria atribuirla al mock del test, y la falla solo ejercita la ruta de exito, no valida el manejo real del error de red.",
+  "requirementIds": ["AC-02", "AC-04"],
+  "verification": [
+    {
+      "command": "npm run test:smoke",
+      "result": "Con la inversion aplicada, la prueba falla en course-tests/smoke.test.tsx:16 con 'Expected substring: \"available\" / Received string: \"Backend: offline\"' y exit 1. Tras revertir las dos lineas de App.tsx, la misma prueba pasa: 'Tests: 1 passed, 1 total', 'Test Suites: 1 passed, 1 total', exit 0.",
+      "evidence": "reports/week-01/baseline.json, checks 'falla-controlada' (status fail) y 'correccion-verificada' (status pass); salida de consola de ambas ejecuciones de npm run test:smoke."
+    },
+    {
+      "command": "npm run typecheck && npm run lint",
+      "result": "Ambos comandos terminan con exit 0 y sin diagnosticos tanto con la falla aplicada como despues de corregirla, confirmando que la falla fue de comportamiento y que no se alteraron pruebas ni configuracion del toolchain.",
+      "evidence": "Salida de consola de npm run typecheck y npm run lint; git diff limitado a App.tsx (sin cambios en course-tests/)."
+    }
+  ]
+}

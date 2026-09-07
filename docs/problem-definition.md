@@ -30,7 +30,7 @@ es la plataforma de referencia.
   (reportante, técnico, coordinador).
 - Lista, detalle y creación de incidencias con categoría, descripción y ubicación
   (edificio / zona / referencia capturada manualmente).
-- Asignación y reasignación de técnico, cambio de prioridad y transiciones de
+- Asignación y reasignación de técnicos, cambio de prioridad y transiciones de
   estado `open → assigned → in_progress → resolved → closed`, con reapertura a
   `assigned` por coordinación.
 - Diagnóstico, notas posteriores y evidencia fotográfica, con acceso según perfil.

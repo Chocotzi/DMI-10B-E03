@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "week": 1,
-  "commitSha": "0ffa2f1b12a7470945db0909ff93b656a8c69714",
+  "commitSha": "49a3632e8c3829263506bfdf62cdbdd482cf18d3",
   "decision": "Para la falla controlada de la Semana 1 restringimos el cambio a codigo de aplicacion (App.tsx), sin tocar course-tests/ ni la configuracion del toolchain, y elegimos una falla de comportamiento en la maquina de estado del efecto de arranque (invertir los manejadores then/catch de getBackendHealth) que el smoke test detecta por su resultado observable, en lugar de romper typecheck/lint o el texto de la interfaz. Restriccion: la falla debe ser reversible en dos lineas, segura (sin datos ni servicios reales) y no puede alterar ninguna prueba (Riesgo 3 del registro y regla de la rubrica).",
   "alternatives": [
     "Introducir un error de tipo en src/api/courseBackend.ts para que falle `npm run typecheck`. Es reversible y detectable, pero ejercita el compilador y no la ruta de comportamiento de la app; el diagnostico no llega a distinguir sintoma de causa a nivel de flujo de estado, y es la clase de fallo que un IDE marca antes de correr nada.",

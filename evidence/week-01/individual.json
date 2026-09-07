@@ -5,14 +5,14 @@
   "members": [
     {
       "studentId": "a3523110609",
-      "commitShas": ["6295ff71180424412c9808ca40cc979f48d880e6"],
-      "files": ["src/api/courseBackend.ts"],
-      "tests": ["npm run test:smoke"],
+      "commitShas": ["49a3632e8c3829263506bfdf62cdbdd482cf18d3"],
+      "files": ["package-lock.json"],
+      "tests": ["npm run audit:ci"],
       "reviews": [],
-      "prediction": "El smoke test debía completar el health-check simulado y mostrar el backend disponible.",
-      "command": "npm run test:smoke",
-      "observedResult": "La prueba de humo completó correctamente y confirmó el estado disponible del backend simulado.",
-      "explanation": "El adaptador de salud resuelve la promesa esperada por la pantalla inicial; por eso el estado observable llega a available."
+      "prediction": "npm audit señalaba una vulnerabilidad moderada en @xmldom/xmldom (dependencia transitiva de plist/expo); npm audit fix debía resolverla sin romper el toolchain.",
+      "command": "npm audit fix && npm run audit:ci && npm run typecheck && npm run lint && npm run test:smoke",
+      "observedResult": "npm audit fix actualizo @xmldom/xmldom de 0.8.14 a 0.8.15 y de 0.9.11 a 0.9.12; audit:ci paso de 1 moderate a 0 vulnerabilities; typecheck, lint y test:smoke siguieron en pass.",
+      "explanation": "El paquete llegaba como dependencia indirecta de plist/expo; npm audit fix actualizo la entrada del lockfile a versiones sin el hallazgo (dos bumps de parche), sin tocar codigo de la app ni pruebas."
     },
     {
       "studentId": "a3523110227",

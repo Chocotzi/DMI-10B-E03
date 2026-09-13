@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "week": 2,
+  "commitSha": "b76b218393c499182c70e9f14ccbdef4797ca7c1",
+  "generatedAt": "2026-09-13T07:57:50-06:00",
+  "checks": [
+    {
+      "id": "violacion-arquitectonica-detectada",
+      "status": "fail",
+      "scenarioType": "failure",
+      "command": "node tools/check-architecture.mjs",
+      "evidence": "El checker detectó dos importaciones prohibidas ui -> infrastructure: src\\campusops\\ui\\IncidentDetailScreen.tsx importa ../infrastructure/InMemoryIncidentRepository y src\\campusops\\ui\\IncidentListScreen.tsx importa ../infrastructure/InMemoryIncidentRepository. La comprobación terminó con código de salida 1."
+    },
+    {
+      "id": "limites-arquitectonicos-corregidos",
+      "status": "pass",
+      "scenarioType": "nominal",
+      "command": "node tools/check-architecture.mjs",
+      "evidence": "Después de mover la composición del repositorio a App.tsx y pasar los casos de uso por props, la comprobación terminó correctamente con: Architecture boundaries pass: no forbidden layer imports found."
+    },
+    {
+      "id": "verificacion-semana-02",
+      "status": "pass",
+      "scenarioType": "boundary",
+      "command": "node_modules\\.bin\\jest.cmd --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/public/week-02.test.ts",
+      "evidence": "La prueba pública terminó con 1 test aprobado y 1 suite aprobada; confirmó que el diagrama expone ui, application, domain e infrastructure y que no declara una dependencia directa ui -> infrastructure."
+    }
+  ]
+}

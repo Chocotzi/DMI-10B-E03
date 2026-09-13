@@ -5,6 +5,12 @@ import { StatusBar } from 'expo-status-bar';
 import { getBackendHealth } from './src/api/courseBackend';
 import { IncidentListScreen } from './src/campusops/ui/IncidentListScreen';
 import { IncidentDetailScreen } from './src/campusops/ui/IncidentDetailScreen';
+import { GetIncidentsUseCase } from './src/campusops/application/GetIncidentsUseCase';
+import { GetIncidentDetailUseCase } from './src/campusops/application/GetIncidentDetailUseCase';
+import { incidentRepository } from './src/campusops/infrastructure/InMemoryIncidentRepository';
+
+const getIncidentsUseCase = new GetIncidentsUseCase(incidentRepository);
+const getIncidentDetailUseCase = new GetIncidentDetailUseCase(incidentRepository);
 
 export default function App() {
   const [status, setStatus] = useState<'checking' | 'available' | 'offline'>('checking');
@@ -28,14 +34,18 @@ export default function App() {
         <Text testID="backend-status">Backend: {status}</Text>
       </View>
       <View style={styles.content}>
-        {selectedIncidentId ? (
-          <IncidentDetailScreen 
-            incidentId={selectedIncidentId} 
-            onBack={() => setSelectedIncidentId(null)} 
+        {status === 'checking' ? (
+          <Text>Conectando con el backend...</Text>
+        ) : selectedIncidentId ? (
+          <IncidentDetailScreen
+            incidentId={selectedIncidentId}
+            onBack={() => setSelectedIncidentId(null)}
+            getIncidentDetailUseCase={getIncidentDetailUseCase}
           />
         ) : (
-          <IncidentListScreen 
-            onSelectIncident={(id) => setSelectedIncidentId(id)} 
+          <IncidentListScreen
+            onSelectIncident={(id) => setSelectedIncidentId(id)}
+            getIncidentsUseCase={getIncidentsUseCase}
           />
         )}
       </View>

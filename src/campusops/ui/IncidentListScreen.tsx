@@ -2,15 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Incident } from '../domain/Incident';
 import { GetIncidentsUseCase } from '../application/GetIncidentsUseCase';
-import { incidentRepository } from '../infrastructure/InMemoryIncidentRepository';
-
-const getIncidentsUseCase = new GetIncidentsUseCase(incidentRepository);
 
 type Props = {
   onSelectIncident: (id: string) => void;
+  getIncidentsUseCase: GetIncidentsUseCase;
 };
 
-export const IncidentListScreen: React.FC<Props> = ({ onSelectIncident }) => {
+export const IncidentListScreen: React.FC<Props> = ({ onSelectIncident, getIncidentsUseCase }) => {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -23,7 +21,7 @@ export const IncidentListScreen: React.FC<Props> = ({ onSelectIncident }) => {
       }
     });
     return () => { mounted = false; };
-  }, []);
+  }, [getIncidentsUseCase]);
 
   if (loading) {
     return <ActivityIndicator style={styles.loader} size="large" color="#0000ff" />;

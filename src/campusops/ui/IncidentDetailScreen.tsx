@@ -2,16 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Incident } from '../domain/Incident';
 import { GetIncidentDetailUseCase } from '../application/GetIncidentDetailUseCase';
-import { incidentRepository } from '../infrastructure/InMemoryIncidentRepository';
-
-const getIncidentDetailUseCase = new GetIncidentDetailUseCase(incidentRepository);
 
 type Props = {
   incidentId: string;
   onBack: () => void;
+  getIncidentDetailUseCase: GetIncidentDetailUseCase;
 };
 
-export const IncidentDetailScreen: React.FC<Props> = ({ incidentId, onBack }) => {
+export const IncidentDetailScreen: React.FC<Props> = ({ incidentId, onBack, getIncidentDetailUseCase }) => {
   const [incident, setIncident] = useState<Incident | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -24,7 +22,7 @@ export const IncidentDetailScreen: React.FC<Props> = ({ incidentId, onBack }) =>
       }
     });
     return () => { mounted = false; };
-  }, [incidentId]);
+  }, [getIncidentDetailUseCase, incidentId]);
 
   if (loading) {
     return <ActivityIndicator style={styles.loader} size="large" color="#0000ff" />;

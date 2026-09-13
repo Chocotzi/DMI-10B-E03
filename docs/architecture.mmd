@@ -1,0 +1,51 @@
+graph TD
+    subgraph UI ["Capa UI (Presentación)"]
+        direction TB
+        AppComp["App.tsx (Root & Navigation)"]
+        ListScreen["IncidentListScreen"]
+        DetailScreen["IncidentDetailScreen"]
+        AppComp --> ListScreen
+        AppComp --> DetailScreen
+    end
+
+    subgraph Application ["Capa de Aplicación (Casos de Uso)"]
+        direction TB
+        UC_List["GetIncidentsUseCase"]
+        UC_Detail["GetIncidentDetailUseCase"]
+    end
+
+    subgraph Domain ["Capa de Dominio (Núcleo)"]
+        direction TB
+        RepoContract["&lt;&lt;interface&gt;&gt;<br/>IncidentRepository"]
+        IncidentModel["Entity: Incident"]
+        Contracts["Contracts & Value Objects<br/>(IncidentWork, Location, Category)"]
+        RepoContract -.-> IncidentModel
+        IncidentModel --> Contracts
+    end
+
+    subgraph Infrastructure ["Capa de Infraestructura (Adaptadores)"]
+        direction TB
+        FakeRepo["InMemoryIncidentRepository<br/>(Fake determinista en memoria)"]
+    end
+
+    %% Relaciones y flujo de dependencias
+    ListScreen --> UC_List
+    DetailScreen --> UC_Detail
+
+    UC_List --> RepoContract
+    UC_Detail --> RepoContract
+    UC_List -.-> IncidentModel
+    UC_Detail -.-> IncidentModel
+
+    FakeRepo -.->|Implementa contrato| RepoContract
+
+    %% Estilos visuales limpios
+    classDef uiStyle fill:#E3F2FD,stroke:#1E88E5,stroke-width:2px,color:#0D47A1;
+    classDef appStyle fill:#E8F5E9,stroke:#43A047,stroke-width:2px,color:#1B5E20;
+    classDef domainStyle fill:#FFF8E1,stroke:#FB8C00,stroke-width:2px,color:#E65100;
+    classDef infraStyle fill:#EDE7F6,stroke:#5E35B1,stroke-width:2px,color:#311B92;
+
+    class AppComp,ListScreen,DetailScreen uiStyle;
+    class UC_List,UC_Detail appStyle;
+    class RepoContract,IncidentModel,Contracts domainStyle;
+    class FakeRepo infraStyle;

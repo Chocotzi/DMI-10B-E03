@@ -1,29 +1,36 @@
 {
   "schemaVersion": 1,
   "week": 2,
-  "commitSha": "b76b218393c499182c70e9f14ccbdef4797ca7c1",
-  "generatedAt": "2026-09-13T07:57:50-06:00",
+  "commitSha": "1cfe8641a899ddfc674cb2f66aaeefacecf14cf8",
+  "generatedAt": "2026-09-14T00:20:00-06:00",
   "checks": [
     {
       "id": "violacion-arquitectonica-detectada",
       "status": "fail",
       "scenarioType": "failure",
-      "command": "node tools/check-architecture.mjs",
-      "evidence": "El checker detectó dos importaciones prohibidas ui -> infrastructure: src\\campusops\\ui\\IncidentDetailScreen.tsx importa ../infrastructure/InMemoryIncidentRepository y src\\campusops\\ui\\IncidentListScreen.tsx importa ../infrastructure/InMemoryIncidentRepository. La comprobación terminó con código de salida 1."
+      "command": "git checkout 3388cd1 -- src/campusops/ui && node tools/check-architecture.mjs; git checkout HEAD -- src/campusops/ui",
+      "evidence": "Sobre el snapshot 3388cd1 de las pantallas (primera version del esqueleto, rama dev-cleber) el checker termina con codigo de salida 1 e imprime 'Architecture violations detected:' seguido de dos lineas: 'src\\campusops\\ui\\IncidentDetailScreen.tsx: ui -> infrastructure (../infrastructure/InMemoryIncidentRepository)' y 'src\\campusops\\ui\\IncidentListScreen.tsx: ui -> infrastructure (../infrastructure/InMemoryIncidentRepository)'. Causa: ambas pantallas importaban el singleton incidentRepository del adaptador concreto (IncidentListScreen.tsx linea 5 en 3388cd1) y construian el caso de uso dentro de la capa UI (linea 7), contradiciendo el diagrama docs/architecture.mmd. El segundo git checkout restaura las pantallas corregidas de HEAD, que vuelven a pasar el checker."
     },
     {
       "id": "limites-arquitectonicos-corregidos",
       "status": "pass",
       "scenarioType": "nominal",
       "command": "node tools/check-architecture.mjs",
-      "evidence": "Después de mover la composición del repositorio a App.tsx y pasar los casos de uso por props, la comprobación terminó correctamente con: Architecture boundaries pass: no forbidden layer imports found."
+      "evidence": "En HEAD, con la composicion movida a App.tsx en 6817fcc (App.tsx lineas 10-13 instancia InMemoryIncidentRepository y construye GetIncidentsUseCase/GetIncidentDetailUseCase; las pantallas los reciben por props en IncidentListScreen.tsx linea 8 e IncidentDetailScreen.tsx linea 9), el checker imprime 'Architecture boundaries pass: no forbidden layer imports found.' y termina con codigo de salida 0. Los archivos de src/campusops/ui solo importan de ../application y ../domain (lineas 3-4 de ambas pantallas)."
     },
     {
       "id": "verificacion-semana-02",
       "status": "pass",
       "scenarioType": "boundary",
-      "command": "node_modules\\.bin\\jest.cmd --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/public/week-02.test.ts",
-      "evidence": "La prueba pública terminó con 1 test aprobado y 1 suite aprobada; confirmó que el diagrama expone ui, application, domain e infrastructure y que no declara una dependencia directa ui -> infrastructure."
+      "command": "npm test -- --ci --runInBand course-tests/public/week-02.test.ts",
+      "evidence": "Salida: 'PASS course-tests/public/week-02.test.ts', 'architecture exposes boundaries and no direct UI-to-infrastructure edge', 'Tests: 1 passed, 1 total', codigo de salida 0. La prueba cubre el caso limite del diagrama: docs/architecture.mmd contiene ui, application, domain e infrastructure y no declara ninguna arista directa de ui hacia infrastructure (la unica arista hacia FakeRepo sale de la raiz de composicion AppRoot, linea 57, que esta fuera de las capas); docs/adr/ADR-001-architecture.md contiene 'alternativa' y 'consecuencia'/'trade-off'."
+    },
+    {
+      "id": "esqueleto-ejecutable-verificado",
+      "status": "pass",
+      "scenarioType": "nominal",
+      "command": "npm run typecheck && npm run lint && npm run check:architecture && npm run test:smoke",
+      "evidence": "Equivale a la receta verify del Makefile a partir de 1cfe864 (linea 12 anade check:architecture). tsc --noEmit y eslint . terminan sin diagnosticos (exit 0); check:architecture imprime 'Architecture boundaries pass: no forbidden layer imports found.'; el smoke test 'renders the reproducible baseline and resolves backend state' pasa (Tests: 1 passed, 1 total) con IncidentListScreen montada desde App.tsx sobre las dos incidencias ficticias de InMemoryIncidentRepository. Nota: en la primera ejecucion en frio de este equipo el smoke test excedio el tiempo de jest por el costo de transformar el arbol de react-native; la segunda ejecucion, con cache, tardo 12 s y paso; en GitHub Actions paso a la primera en 6817fcc (run 34763522211)."
     }
   ]
 }

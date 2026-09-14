@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "week": 2,
+  "commitSha": "1cfe8641a899ddfc674cb2f66aaeefacecf14cf8",
+  "decision": "Al integrar dev-cleber (3388cd1) y fix/semana-02-arquitectura (6817fcc) en la rama integracion/semana-02-merge conservamos la correccion de limites basada en una raiz de composicion: App.tsx (lineas 10-13) es el unico modulo que instancia InMemoryIncidentRepository y construye GetIncidentsUseCase y GetIncidentDetailUseCase, y las pantallas de src/campusops/ui reciben los casos de uso por props (IncidentListScreen.tsx linea 8, IncidentDetailScreen.tsx linea 9). Descartamos reintroducir el singleton exportado por infraestructura importado desde la UI y descartamos, por ahora, un contenedor de inyeccion o React Context. Ademas la regla dejo de ser solo documental: npm run check:architecture (tools/check-architecture.mjs) se incorporo a la receta verify del Makefile (linea 12), de modo que make feedback y el workflow de semana 1 la ejecutan en cada push. Restricciones que guiaron la decision: facilidad de prueba sin backend, complejidad minima para un esqueleto de dos pantallas y costo bajo de sustituir el proveedor de datos (fake en memoria hoy, HttpIncidentRepository contra /v1/incidents en la semana 5).",
+  "alternatives": [
+    "Mantener el singleton incidentRepository exportado desde src/campusops/infrastructure e importado directamente por las pantallas (estado de 3388cd1): cero cableado y el esqueleto funciona, pero acopla la UI a un adaptador concreto, contradice el diagrama y obliga a usar jest.mock del modulo de infraestructura para probar una pantalla con un repositorio de prueba.",
+    "Contenedor de dependencias o React Context (un RepositoryProvider en la raiz) que entregue el repositorio o los casos de uso a cualquier pantalla: elimina el paso de props y escala mejor con muchas pantallas, pero anade indirecciones y un proveedor global antes de que exista navegacion, y la dependencia deja de ser visible en la firma del componente.",
+    "Raiz de composicion en App.tsx con casos de uso inyectados por props y regla de capas ejecutable en make verify (elegida): la dependencia queda explicita y tipada en las props, las pantallas se prueban con un stub de IncidentRepository sin mocks de modulo, el proveedor se sustituye en una linea de App.tsx y cualquier regresion de limites falla en el checker y en CI."
+  ],
+  "tradeoff": "Beneficio: las cuatro capas y la regla de dependencia son verificables por comando (checker de imports y prueba publica de semana 2) y no solo por lectura del diagrama; sustituir InMemoryIncidentRepository por un adaptador HTTP no toca ui, application ni domain; las pantallas y los casos de uso se prueban con stubs del puerto sin backend. Costo aceptado: el paso de casos de uso por props crece con cada pantalla nueva y al introducir navegacion (semanas 5 y 10) habra que mover la composicion a un proveedor en el navegador raiz; tools/check-architecture.mjs es una heuristica por segmentos de ruta (/ui/, /infrastructure/) que no analiza el grafo real de modulos ni alias, asi que un import por alias o barrel podria eludirlo; y make verify tarda un paso mas en cada ejecucion.",
+  "requirementIds": ["AC-02", "AC-03", "AC-04"],
+  "verification": [
+    {
+      "command": "git checkout 3388cd1 -- src/campusops/ui && node tools/check-architecture.mjs; git checkout HEAD -- src/campusops/ui",
+      "result": "Sobre las pantallas del snapshot 3388cd1 el checker imprime 'Architecture violations detected:' con dos lineas (IncidentDetailScreen.tsx e IncidentListScreen.tsx: ui -> infrastructure (../infrastructure/InMemoryIncidentRepository)) y termina con codigo de salida 1; al restaurar las pantallas de HEAD vuelve a imprimir 'Architecture boundaries pass: no forbidden layer imports found.' con codigo de salida 0.",
+      "evidence": "reports/week-02/dependencies.json, checks 'violacion-arquitectonica-detectada' (fail) y 'limites-arquitectonicos-corregidos' (pass); diff de 6817fcc sobre src/campusops/ui y App.tsx."
+    },
+    {
+      "command": "npm test -- --ci --runInBand course-tests/public/week-02.test.ts",
+      "result": "PASS course-tests/public/week-02.test.ts; 'architecture exposes boundaries and no direct UI-to-infrastructure edge'; Tests: 1 passed, 1 total; codigo de salida 0, con el ADR consolidado y el diagrama de ed4a3a8.",
+      "evidence": "reports/week-02/dependencies.json, check 'verificacion-semana-02'; docs/architecture.mmd y docs/adr/ADR-001-architecture.md."
+    },
+    {
+      "command": "npm run typecheck && npm run lint && npm run check:architecture && npm run test:smoke",
+      "result": "Los cuatro comandos de la receta verify del Makefile terminan con codigo de salida 0: tsc y eslint sin diagnosticos, checker sin violaciones y smoke test con Tests: 1 passed, 1 total (la lista de incidencias ficticias se monta desde App.tsx tras resolver el estado del backend).",
+      "evidence": "reports/week-02/dependencies.json, check 'esqueleto-ejecutable-verificado'; Makefile linea 12; reports/week-02/verify.json generado por make verify-week-02 sobre 1cfe864."
+    }
+  ]
+}

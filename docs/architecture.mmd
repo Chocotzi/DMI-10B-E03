@@ -1,51 +1,101 @@
-graph TD
-    subgraph UI ["Capa UI (Presentación)"]
-        direction TB
-        AppComp["App.tsx (Root & Navigation)"]
-        ListScreen["IncidentListScreen"]
-        DetailScreen["IncidentDetailScreen"]
-        AppComp --> ListScreen
-        AppComp --> DetailScreen
+%% CampusOps — arquitectura por capas (Clean Architecture). Coherente con docs/adr/ADR-001-architecture.md.
+%% Regla de dependencia: las flechas sólidas apuntan siempre hacia adentro (Domain).
+%% Los adaptadores de Infrastructure implementan puertos del dominio (flechas punteadas, inversión de dependencias).
+%% Nodos con borde discontinuo = límites planificados para hitos posteriores (todavía sin código).
+%% Comprobación ejecutable de los límites reales: npm run check:architecture (tools/check-architecture.mjs).
+flowchart TD
+    Reportante(["Perfil: Reportante"])
+    Tecnico(["Perfil: Técnico"])
+    Coordinador(["Perfil: Coordinador"])
+
+    subgraph Root ["Raíz de composición — App.tsx (fuera de las capas)"]
+        AppRoot["App.tsx<br/>instancia el repositorio y construye los casos de uso"]
     end
 
-    subgraph Application ["Capa de Aplicación (Casos de Uso)"]
-        direction TB
+    subgraph UI ["Capa UI — src/campusops/ui"]
+        ListScreen["IncidentListScreen<br/>recibe GetIncidentsUseCase por props"]
+        DetailScreen["IncidentDetailScreen<br/>recibe GetIncidentDetailUseCase por props"]
+        SessionScreens["Pantallas de sesión y funciones por perfil<br/>(planificado S6)"]
+    end
+
+    subgraph Application ["Capa Application — src/campusops/application"]
         UC_List["GetIncidentsUseCase"]
         UC_Detail["GetIncidentDetailUseCase"]
+        UC_Create["CreateIncident y acciones sobre incidencias<br/>(planificado S5)"]
+        UC_Session["Login, Logout y Refresh<br/>(planificado S6)"]
+        UC_Sync["SyncPendingOperations<br/>(planificado S8)"]
     end
 
-    subgraph Domain ["Capa de Dominio (Núcleo)"]
-        direction TB
-        RepoContract["&lt;&lt;interface&gt;&gt;<br/>IncidentRepository"]
-        IncidentModel["Entity: Incident"]
-        Contracts["Contracts & Value Objects<br/>(IncidentWork, Location, Category)"]
-        RepoContract -.-> IncidentModel
-        IncidentModel --> Contracts
+    subgraph Domain ["Capa Domain — src/campusops/domain y contracts.ts"]
+        IncidentModel["Incident (entidad)"]
+        RepoPort["IncidentRepository (puerto)"]
+        Contracts["contracts.ts<br/>IncidentStatus, IncidentCategory, IncidentWork,<br/>IncidentLocation, PendingIncidentOperation"]
+        Policies["Reglas de transición de estado y permisos por perfil<br/>(planificado S5–S6)"]
+        SessionPort["SessionRepository (puerto)<br/>(planificado S6)"]
+        QueuePort["PendingOperationQueue (puerto)<br/>(planificado S8)"]
+        LocationPort["LocationProvider (puerto)<br/>(planificado S9)"]
     end
 
-    subgraph Infrastructure ["Capa de Infraestructura (Adaptadores)"]
-        direction TB
-        FakeRepo["InMemoryIncidentRepository<br/>(Fake determinista en memoria)"]
+    subgraph Infrastructure ["Capa Infrastructure — src/campusops/infrastructure"]
+        FakeRepo["InMemoryIncidentRepository<br/>fake determinista con datos ficticios"]
+        HttpRepo["HttpIncidentRepository<br/>backend /v1/incidents (planificado S5)"]
+        SecureSession["Almacén seguro de sesión<br/>(planificado S4–S6)"]
+        LocalQueue["Cola persistente SQLite/AsyncStorage<br/>(planificado S8)"]
+        GeoAdapter["Adaptador de geocodificación<br/>doble del curso (planificado S9)"]
     end
 
-    %% Relaciones y flujo de dependencias
+    %% Perfiles de usuario: una sola app; las funciones dependen del perfil y se autorizan en dominio y backend
+    Reportante --> ListScreen
+    Tecnico --> ListScreen
+    Coordinador --> ListScreen
+
+    %% Raíz de composición: único módulo que conoce a la vez pantallas, casos de uso y adaptadores
+    AppRoot -->|renderiza| ListScreen
+    AppRoot -->|renderiza| DetailScreen
+    AppRoot -->|construye| UC_List
+    AppRoot -->|construye| UC_Detail
+    AppRoot -->|instancia| FakeRepo
+
+    %% La capa de interfaz depende solo de Application (y de tipos de Domain)
     ListScreen --> UC_List
     DetailScreen --> UC_Detail
+    ListScreen -.->|tipo Incident| IncidentModel
+    DetailScreen -.->|tipo Incident| IncidentModel
+    SessionScreens --> UC_Session
 
-    UC_List --> RepoContract
-    UC_Detail --> RepoContract
-    UC_List -.-> IncidentModel
-    UC_Detail -.-> IncidentModel
+    %% Application depende solo de Domain
+    UC_List --> RepoPort
+    UC_Detail --> RepoPort
+    UC_Create --> RepoPort
+    UC_Create --> Policies
+    UC_Session --> SessionPort
+    UC_Sync --> QueuePort
+    UC_Sync --> RepoPort
 
-    FakeRepo -.->|Implementa contrato| RepoContract
+    %% Domain no depende de ninguna otra capa
+    RepoPort --> IncidentModel
+    IncidentModel --> Contracts
+    Policies --> Contracts
 
-    %% Estilos visuales limpios
+    %% Infrastructure implementa los puertos del dominio (inversión de dependencias)
+    FakeRepo -.->|implementa| RepoPort
+    HttpRepo -.->|implementa| RepoPort
+    SecureSession -.->|implementa| SessionPort
+    LocalQueue -.->|implementa| QueuePort
+    GeoAdapter -.->|implementa| LocationPort
+
+    classDef actor fill:#FAFAFA,stroke:#616161,stroke-width:1.5px,color:#212121;
+    classDef rootStyle fill:#FFFDE7,stroke:#F9A825,stroke-width:2px,color:#5D4037;
     classDef uiStyle fill:#E3F2FD,stroke:#1E88E5,stroke-width:2px,color:#0D47A1;
     classDef appStyle fill:#E8F5E9,stroke:#43A047,stroke-width:2px,color:#1B5E20;
     classDef domainStyle fill:#FFF8E1,stroke:#FB8C00,stroke-width:2px,color:#E65100;
     classDef infraStyle fill:#EDE7F6,stroke:#5E35B1,stroke-width:2px,color:#311B92;
+    classDef planned stroke-dasharray: 6 4;
 
-    class AppComp,ListScreen,DetailScreen uiStyle;
-    class UC_List,UC_Detail appStyle;
-    class RepoContract,IncidentModel,Contracts domainStyle;
-    class FakeRepo infraStyle;
+    class Reportante,Tecnico,Coordinador actor;
+    class AppRoot rootStyle;
+    class ListScreen,DetailScreen,SessionScreens uiStyle;
+    class UC_List,UC_Detail,UC_Create,UC_Session,UC_Sync appStyle;
+    class IncidentModel,RepoPort,Contracts,Policies,SessionPort,QueuePort,LocationPort domainStyle;
+    class FakeRepo,HttpRepo,SecureSession,LocalQueue,GeoAdapter infraStyle;
+    class SessionScreens,UC_Create,UC_Session,UC_Sync,Policies,SessionPort,QueuePort,LocationPort,HttpRepo,SecureSession,LocalQueue,GeoAdapter planned;

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "week": 3,
+  "commitSha": "f6e951b106e37dbdb25b7371b2dbb4f101180918",
+  "decision": "Atender primero T1 y probar la autorización en el servicio, no en la interfaz. Una incidencia ajena debe ser rechazada aunque un actor consiga construir manualmente la solicitud; por eso el control se verifica contra el backend didáctico y no mediante la visibilidad de un botón.",
+  "alternatives": [
+    "Validar el perfil sólo en la UI ocultando las acciones que el actor no puede usar. Es sencillo, pero un cliente modificado podría enviar la solicitud y el control no protegería el recurso.",
+    "Validar actor, rol y visibilidad en el backend antes de leer o modificar la incidencia. Requiere mantener reglas de autorización en el servicio, pero protege el límite de confianza aunque la solicitud no provenga de la UI esperada."
+  ],
+  "tradeoff": "La decisión centraliza la protección en el servicio y permite una prueba reproducible con HTTP real; el costo es mantener reglas de autorización junto con las transiciones del dominio y probar más casos de rol. Se acepta ese costo porque la privacidad no puede depender de controles visuales.",
+  "requirementIds": ["AC-02", "AC-03", "AC-04"],
+  "verification": [
+    {
+      "command": "npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/T1-acceso-incidencias-ajenas.test.ts",
+      "result": "La suite T1 pasó y observó HTTP 403 para reporter-2 al solicitar campus-inc-001.",
+      "evidence": "course-tests/T1-acceso-incidencias-ajenas.test.ts"
+    },
+    {
+      "command": "npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/T2-reasignacion-sin-permiso.test.ts course-tests/T3-sanitizacion-telemetria.test.ts course-tests/T4-secret-scan.test.ts",
+      "result": "Las suites T2, T3 y T4 pasaron; se observaron rechazo 403, valores redactados y detección del patrón ficticio.",
+      "evidence": "course-tests/T2-reasignacion-sin-permiso.test.ts, course-tests/T3-sanitizacion-telemetria.test.ts y course-tests/T4-secret-scan.test.ts"
+    }
+  ]
+}

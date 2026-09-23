@@ -1,24 +1,30 @@
 {
   "schemaVersion": 1,
   "week": 3,
-  "commitSha": "f6e951b106e37dbdb25b7371b2dbb4f101180918",
-  "decision": "Atender primero T1 y probar la autorización en el servicio, no en la interfaz. Una incidencia ajena debe ser rechazada aunque un actor consiga construir manualmente la solicitud; por eso el control se verifica contra el backend didáctico y no mediante la visibilidad de un botón.",
+  "commitSha": "2f2692496e7af53e0773d6641ad90dacb47d4931",
+  "decision": "El equipo prioriza T1: autorizar en el backend la consulta de incidencias por actor, perfil y propiedad antes de devolver un recurso. Este control se aplica después de que el cliente cruza la frontera app–API, por lo que una URL construida manualmente o un botón oculto no puede conceder acceso. T2 reutiliza la misma autoridad de servicio para asignaciones; T3 y T4 reducen exposiciones secundarias en logs y CI. La prioridad T1 queda documentada para revisión y confirmación de Carlos con el equipo antes de congelar la entrega.",
   "alternatives": [
-    "Validar el perfil sólo en la UI ocultando las acciones que el actor no puede usar. Es sencillo, pero un cliente modificado podría enviar la solicitud y el control no protegería el recurso.",
-    "Validar actor, rol y visibilidad en el backend antes de leer o modificar la incidencia. Requiere mantener reglas de autorización en el servicio, pero protege el límite de confianza aunque la solicitud no provenga de la UI esperada."
+    "Ocultar en la interfaz las incidencias y acciones ajenas: simplifica la presentación por perfil, pero no impide que un cliente modificado envíe GET /v1/incidents/:id o POST de asignación directamente a la API.",
+    "Autorizar actor, perfil, propiedad o asignación dentro del backend antes de leer o modificar una incidencia: centraliza reglas y protege la frontera aunque la solicitud sea manual, pero exige mantener y probar transiciones, roles, versión e idempotencia en el servicio.",
+    "Confiar en que la cola offline y el almacenamiento local sólo contengan recursos visibles: evita una consulta inmediata, pero no protege el recurso remoto ni detecta una reasignación o solicitud manipulada."
   ],
-  "tradeoff": "La decisión centraliza la protección en el servicio y permite una prueba reproducible con HTTP real; el costo es mantener reglas de autorización junto con las transiciones del dominio y probar más casos de rol. Se acepta ese costo porque la privacidad no puede depender de controles visuales.",
-  "requirementIds": ["AC-02", "AC-03", "AC-04"],
+  "tradeoff": "El beneficio de autorizar en servicio es que la regla protege los activos de T1 y T2 en el punto que decide y persiste la operación, y se puede observar con HTTP 403 reproducible. El costo aceptado es centralizar reglas de perfil, propietario, técnico asignado, transición y versión en el backend y ampliar casos de prueba. La sanitización y el escaneo añaden mantenimiento de patrones; se acepta porque disminuyen la divulgación de datos que la autorización no puede retirar de una telemetría o un commit ya creado.",
+  "requirementIds": ["AC-01", "AC-02", "AC-03", "AC-04", "AC-05"],
   "verification": [
     {
-      "command": "npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/T1-acceso-incidencias-ajenas.test.ts",
-      "result": "La suite T1 pasó y observó HTTP 403 para reporter-2 al solicitar campus-inc-001.",
-      "evidence": "course-tests/T1-acceso-incidencias-ajenas.test.ts"
+      "command": "npm test -- --ci --runInBand course-tests/T1-acceso-incidencias-ajenas.test.ts",
+      "result": "PASS; el backend didáctico devolvió HTTP 403 a reporter-2 al solicitar campus-inc-001, cuya visibilidad corresponde a reporter-1.",
+      "evidence": "course-tests/T1-acceso-incidencias-ajenas.test.ts y reports/week-03/security.json, check T1-acceso-incidencias-ajenas."
     },
     {
-      "command": "npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/T2-reasignacion-sin-permiso.test.ts course-tests/T3-sanitizacion-telemetria.test.ts course-tests/T4-secret-scan.test.ts",
-      "result": "Las suites T2, T3 y T4 pasaron; se observaron rechazo 403, valores redactados y detección del patrón ficticio.",
-      "evidence": "course-tests/T2-reasignacion-sin-permiso.test.ts, course-tests/T3-sanitizacion-telemetria.test.ts y course-tests/T4-secret-scan.test.ts"
+      "command": "npm test -- --ci --runInBand course-tests/T2-reasignacion-sin-permiso.test.ts course-tests/T3-sanitizacion-telemetria.test.ts course-tests/T4-secret-scan.test.ts",
+      "result": "PASS; T2 observó 403 al intentar assign como reporter-1, T3 sustituyó authorization/email/location por [REDACTED], y T4 comprobó que el scanner rechaza una clave ficticia temporal.",
+      "evidence": "Las tres suites en course-tests/T2-reasignacion-sin-permiso.test.ts, T3-sanitizacion-telemetria.test.ts y T4-secret-scan.test.ts; índices correspondientes en reports/week-03/security.json."
+    },
+    {
+      "command": "make verify-week-03 && make public-test-week-03",
+      "result": "La verificación ejecutó typecheck, lint, audit de severidad crítica y smoke test sin fallos; la prueba pública verificó workflow con permissions: contents: read y que el modelo contiene activos, amenazas, controles y verificaciones.",
+      "evidence": "reports/week-03/verify.json y reports/week-03/public-tests.json generados sobre el SHA 2f2692496e7af53e0773d6641ad90dacb47d4931."
     }
   ]
 }

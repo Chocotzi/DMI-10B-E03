@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "week": 3,
+  "mode": "public",
+  "commitSha": "2f2692496e7af53e0773d6641ad90dacb47d4931",
+  "evaluatedAt": "2026-09-23T14:24:04.983639+00:00",
+  "status": "pass",
+  "checks": [
+    {
+      "id": "base_files",
+      "status": "pass",
+      "detail": "missing=[]"
+    },
+    {
+      "id": "react_native_profile",
+      "status": "pass",
+      "detail": "missing packages=[]"
+    },
+    {
+      "id": "toolchain_scripts",
+      "status": "pass",
+      "detail": "missing scripts=[]"
+    },
+    {
+      "id": "workflow_integrity",
+      "status": "pass",
+      "detail": "bypass markers=[]"
+    },
+    {
+      "id": "secret_scan",
+      "status": "pass",
+      "detail": "hits=[]"
+    },
+    {
+      "id": "required_evidence",
+      "status": "pass",
+      "detail": "missing/empty=[]"
+    },
+    {
+      "id": "schema:reports/week-03/security.json",
+      "status": "pass",
+      "detail": "5 checks indexed, 4 boundary/failure; report evaluates HEAD"
+    },
+    {
+      "id": "schema:evidence/week-03/engineering.json",
+      "status": "pass",
+      "detail": "decision evidence is substantive and reproducible; report evaluates HEAD"
+    },
+    {
+      "id": "schema:evidence/week-03/individual.json",
+      "status": "pass",
+      "detail": "three individual evidence records found"
+    },
+    {
+      "id": "toolchain_1",
+      "status": "pass",
+      "detail": "npm run typecheck\n> dmi-react-native-starter@1.0.0 typecheck\n> tsc --noEmit"
+    },
+    {
+      "id": "toolchain_2",
+      "status": "pass",
+      "detail": "npm run lint\n> dmi-react-native-starter@1.0.0 lint\n> eslint ."
+    },
+    {
+      "id": "toolchain_3",
+      "status": "pass",
+      "detail": "npm run audit:ci\n> dmi-react-native-starter@1.0.0 audit:ci\n> npm audit --omit=dev --audit-level=critical\n\n# npm audit report\n\njs-yaml  3.0.0 - 3.15.1 || 4.0.0 - 4.3.1\nSeverity: high\njs-yaml: maxTotalMergeKeys does not limit CPU use for empty merge sources - https://github.com/advisories/GHSA-2883-xcg3-v3hh\njs-yaml: maxTotalMergeKeys does not limit CPU use for empty merge sources - https://github.com/advisories/GHSA-2883-xcg3-v3hh\nfix available via `npm audit fix`\nnode_modules/@expo/xcpretty/node_modules/js-yaml\nnode_modules/js-yaml\n\n1 high severity vulnerability\n\nTo address all issues, run:\n  npm audit fix"
+    },
+    {
+      "id": "toolchain_4",
+      "status": "pass",
+      "detail": "npm test -- --ci --runInBand course-tests/public/week-03.test.ts\n> dmi-react-native-starter@1.0.0 test\n> jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/public/week-03.test.ts\n\n\nPASS course-tests/public/week-03.test.ts\n  ✓ feedback workflow preserves critical checks and least privilege (2 ms)\n  ✓ threat model links assets, threats, controls and verification (1 ms)\n\nTest Suites: 1 passed, 1 total\nTests:       2 passed, 2 total\nSnapshots:   0 total\nTime:        0.32 s, estimated 1 s\nRan all test suites matching /course-tests\\/public\\/week-03.test.ts/i."
+    }
+  ]
+}

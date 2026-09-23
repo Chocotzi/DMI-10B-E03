@@ -1,50 +1,43 @@
 {
   "schemaVersion": 1,
   "week": 3,
-  "commitSha": "f6e951b106e37dbdb25b7371b2dbb4f101180918",
-  "generatedAt": "2026-09-20T12:00:00-06:00",
+  "commitSha": "2f2692496e7af53e0773d6641ad90dacb47d4931",
+  "generatedAt": "2026-09-23T14:21:16Z",
   "checks": [
     {
       "id": "T1-acceso-incidencias-ajenas",
       "status": "pass",
-      "scenarioType": "nominal",
-      "command": "npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/T1-acceso-incidencias-ajenas.test.ts",
-      "evidence": "La prueba levantó el backend didáctico y comprobó que reporter-2 recibe HTTP 403 al solicitar la incidencia de reporter-1. La suite pasó."
+      "scenarioType": "failure",
+      "command": "npm test -- --ci --runInBand course-tests/T1-acceso-incidencias-ajenas.test.ts",
+      "evidence": "PASS; la prueba inició el backend didáctico y observó HTTP 403 para reporter-2 al solicitar campus-inc-001 de reporter-1."
     },
     {
       "id": "T2-reasignacion-sin-permiso",
       "status": "pass",
-      "scenarioType": "nominal",
-      "command": "npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/T2-reasignacion-sin-permiso.test.ts",
-      "evidence": "La prueba comprobó que reporter-1 no puede ejecutar assign sobre una incidencia y recibe HTTP 403. La suite pasó."
+      "scenarioType": "failure",
+      "command": "npm test -- --ci --runInBand course-tests/T2-reasignacion-sin-permiso.test.ts",
+      "evidence": "PASS; reporter-1 intentó la acción assign con technician-2 y el backend respondió HTTP 403 sin modificar la incidencia."
     },
     {
       "id": "T3-sanitizacion-telemetria",
       "status": "pass",
-      "scenarioType": "nominal",
-      "command": "npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/T3-sanitizacion-telemetria.test.ts",
-      "evidence": "La prueba comprobó que authorization, email y location se convierten en [REDACTED], mientras incidentId y status permanecen disponibles. La suite pasó."
+      "scenarioType": "boundary",
+      "command": "npm test -- --ci --runInBand course-tests/T3-sanitizacion-telemetria.test.ts",
+      "evidence": "PASS; authorization, email y location fueron [REDACTED], y incidentId/status permanecieron como contexto técnico permitido."
     },
     {
       "id": "T4-secret-scan",
       "status": "pass",
-      "scenarioType": "nominal",
-      "command": "npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/T4-secret-scan.test.ts",
-      "evidence": "La prueba ejecutó tools/secret-scan.mjs contra un archivo temporal y comprobó que una credencial ficticia se detecta. La suite pasó."
-    },
-    {
-      "id": "falla-controlada-secret-scan",
-      "status": "fail",
       "scenarioType": "failure",
-      "command": "$p = Join-Path $env:TEMP 'campusops-week3-secret.txt'; Set-Content -LiteralPath $p -Value ('EXAMPLE_KEY=sk' + '_test_FAKE12345678'); node tools/secret-scan.mjs $p; $code = $LASTEXITCODE; Remove-Item -LiteralPath $p -Force; exit $code",
-      "evidence": "El comando terminó con código 1 y mostró: Secret patterns detected: test API key. El archivo con la credencial ficticia fue temporal y se eliminó después de la comprobación."
+      "command": "npm test -- --ci --runInBand course-tests/T4-secret-scan.test.ts",
+      "evidence": "PASS; el test creó una clave ficticia temporal, el scanner terminó con detección 'test API key' y la suite confirmó el rechazo antes de borrar el directorio temporal."
     },
     {
-      "id": "correccion-secret-scan",
+      "id": "workflow-minimo-privilegio",
       "status": "pass",
-      "scenarioType": "boundary",
-      "command": "$p = Join-Path $env:TEMP 'campusops-week3-clean.txt'; Set-Content -LiteralPath $p -Value 'EXAMPLE_KEY=course-fixture'; node tools/secret-scan.mjs $p; $code = $LASTEXITCODE; Remove-Item -LiteralPath $p -Force; exit $code",
-      "evidence": "Después de retirar el patrón de credencial, el comando terminó con código 0 y mostró: Secret scan passed: no declared patterns detected."
+      "scenarioType": "nominal",
+      "command": "npm test -- --ci --runInBand course-tests/public/week-03.test.ts",
+      "evidence": "PASS; 2 pruebas comprobaron Node 22, instalación reproducible, ausencia de bypasses y permissions: contents: read en el workflow."
     }
   ]
 }

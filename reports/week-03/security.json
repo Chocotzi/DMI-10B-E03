@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "week": 3,
+  "commitSha": "f6e951b106e37dbdb25b7371b2dbb4f101180918",
+  "generatedAt": "2026-09-20T12:00:00-06:00",
+  "checks": [
+    {
+      "id": "T1-acceso-incidencias-ajenas",
+      "status": "pass",
+      "scenarioType": "nominal",
+      "command": "npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/T1-acceso-incidencias-ajenas.test.ts",
+      "evidence": "La prueba levantó el backend didáctico y comprobó que reporter-2 recibe HTTP 403 al solicitar la incidencia de reporter-1. La suite pasó."
+    },
+    {
+      "id": "T2-reasignacion-sin-permiso",
+      "status": "pass",
+      "scenarioType": "nominal",
+      "command": "npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/T2-reasignacion-sin-permiso.test.ts",
+      "evidence": "La prueba comprobó que reporter-1 no puede ejecutar assign sobre una incidencia y recibe HTTP 403. La suite pasó."
+    },
+    {
+      "id": "T3-sanitizacion-telemetria",
+      "status": "pass",
+      "scenarioType": "nominal",
+      "command": "npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/T3-sanitizacion-telemetria.test.ts",
+      "evidence": "La prueba comprobó que authorization, email y location se convierten en [REDACTED], mientras incidentId y status permanecen disponibles. La suite pasó."
+    },
+    {
+      "id": "T4-secret-scan",
+      "status": "pass",
+      "scenarioType": "nominal",
+      "command": "npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/T4-secret-scan.test.ts",
+      "evidence": "La prueba ejecutó tools/secret-scan.mjs contra un archivo temporal y comprobó que una credencial ficticia se detecta. La suite pasó."
+    },
+    {
+      "id": "falla-controlada-secret-scan",
+      "status": "fail",
+      "scenarioType": "failure",
+      "command": "$p = Join-Path $env:TEMP 'campusops-week3-secret.txt'; Set-Content -LiteralPath $p -Value ('EXAMPLE_KEY=sk' + '_test_FAKE12345678'); node tools/secret-scan.mjs $p; $code = $LASTEXITCODE; Remove-Item -LiteralPath $p -Force; exit $code",
+      "evidence": "El comando terminó con código 1 y mostró: Secret patterns detected: test API key. El archivo con la credencial ficticia fue temporal y se eliminó después de la comprobación."
+    },
+    {
+      "id": "correccion-secret-scan",
+      "status": "pass",
+      "scenarioType": "boundary",
+      "command": "$p = Join-Path $env:TEMP 'campusops-week3-clean.txt'; Set-Content -LiteralPath $p -Value 'EXAMPLE_KEY=course-fixture'; node tools/secret-scan.mjs $p; $code = $LASTEXITCODE; Remove-Item -LiteralPath $p -Force; exit $code",
+      "evidence": "Después de retirar el patrón de credencial, el comando terminó con código 0 y mostró: Secret scan passed: no declared patterns detected."
+    }
+  ]
+}

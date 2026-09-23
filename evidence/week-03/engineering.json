@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "week": 3,
-  "commitSha": "2f2692496e7af53e0773d6641ad90dacb47d4931",
+  "commitSha": "3a4acb68298e3185f1b0d4fb421402bd167acdc7",
   "decision": "El equipo prioriza T1: autorizar en el backend la consulta de incidencias por actor, perfil y propiedad antes de devolver un recurso. Este control se aplica después de que el cliente cruza la frontera app–API, por lo que una URL construida manualmente o un botón oculto no puede conceder acceso. T2 reutiliza la misma autoridad de servicio para asignaciones; T3 y T4 reducen exposiciones secundarias en logs y CI. La prioridad T1 queda documentada para revisión y confirmación de Carlos con el equipo antes de congelar la entrega.",
   "alternatives": [
     "Ocultar en la interfaz las incidencias y acciones ajenas: simplifica la presentación por perfil, pero no impide que un cliente modificado envíe GET /v1/incidents/:id o POST de asignación directamente a la API.",

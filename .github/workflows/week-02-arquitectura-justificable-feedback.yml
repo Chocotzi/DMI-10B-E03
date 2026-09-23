@@ -22,6 +22,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          # On pull_request, evaluate the submitted head rather than GitHub's
+          # synthetic merge commit so the evidence SHA chain remains auditable.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
       - name: Use Node.js 22
         uses: actions/setup-node@v4

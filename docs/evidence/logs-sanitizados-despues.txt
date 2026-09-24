@@ -1,0 +1,67 @@
+# Hallazgo 3 - datos sensibles en logs / redactForTelemetry (DESPUES de la correccion)
+# Rama: week4/security-audit-chocotzi
+# Fecha: 2026-09-24T23:10:59Z
+# Datos de prueba: solo valores ficticios (demo-*, persona@campusops.test) y las incidencias de ejemplo del repositorio en memoria.
+
+$ git grep -n -E 'console\.' -- src App.tsx index.ts
+[exit=1]
+
+$ awk '/^const REDACTED/{p=1} p{print} /^export function redactForTelemetry/{e=1} e&&/^}/{exit}' src/course-evaluation/index.ts
+const REDACTED = '[REDACTED]';
+
+function normalizeKey(key: string): string {
+  return key.toLowerCase().replace(/[_-]/g, '');
+}
+
+// Claves sensibles de docs/CAMPUSOPS_API.md; se comparan ya normalizadas.
+const SENSITIVE_KEYS: ReadonlySet<string> = new Set(
+  [
+    'authorization', 'password', 'token', 'accessToken', 'refreshToken', 'email', 'displayName', 'name',
+    'userId', 'reporterId', 'technicianId', 'assignedTechnicianId', 'location', 'latitude', 'longitude',
+    'photos', 'evidence', 'internalComments', 'assignmentHistory',
+  ].map(normalizeKey),
+);
+
+function redact(value: unknown, ancestors: WeakSet<object>): unknown {
+  if (typeof value !== 'object' || value === null) return value;
+  if (ancestors.has(value)) return '[Circular]';
+  ancestors.add(value);
+  try {
+    if (Array.isArray(value)) return value.map((item) => redact(item, ancestors));
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [
+        key,
+        SENSITIVE_KEYS.has(normalizeKey(key)) ? REDACTED : redact(item, ancestors),
+      ]),
+    );
+  } finally {
+    ancestors.delete(value);
+  }
+}
+
+export function redactForTelemetry(input: unknown): unknown {
+  return redact(input, new WeakSet());
+}
+[exit=0]
+
+$ npm test -- --ci --runInBand --verbose --no-color src/course-evaluation/redactForTelemetry.test.ts course-tests/public/week-04.test.ts 2>&1 | grep -E '^(PASS|FAIL)|✓|✕|√|×|Tests:|Test Suites:|must be implemented' | awk '!seen[$0]++'
+PASS src/course-evaluation/redactForTelemetry.test.ts
+    √ no filtra tokens de una respuesta de sesión (4 ms)
+    √ no filtra técnico asignado ni ubicación de las incidencias del repositorio (1 ms)
+    √ redacta la clave access_token sin importar mayúsculas ni separadores
+    √ redacta la clave Access-Token sin importar mayúsculas ni separadores
+    √ redacta la clave REFRESH_TOKEN sin importar mayúsculas ni separadores
+    √ redacta la clave Assigned-Technician-Id sin importar mayúsculas ni separadores
+    √ redacta la clave display_name sin importar mayúsculas ni separadores
+    √ redacta la clave Internal_Comments sin importar mayúsculas ni separadores
+    √ conserva el contexto técnico no sensible
+    √ reemplaza el valor completo aunque sea un objeto o una lista (1 ms)
+    √ recorre listas y objetos anidados
+    √ no muta la entrada (1 ms)
+    √ no se cae con referencias circulares y sigue redactando
+    √ deja pasar valores primitivos (1 ms)
+PASS course-tests/public/week-04.test.ts
+  √ CampusOps redacts personal and incident-sensitive data while preserving technical context (1 ms)
+Test Suites: 2 passed, 2 total
+Tests:       15 passed, 15 total
+[exit=0]

@@ -12,8 +12,40 @@ function pending(name: string): never {
   throw new Error(`${name} must be implemented in the assigned week`);
 }
 
-export function redactForTelemetry(_input: unknown): unknown {
-  return pending('redactForTelemetry');
+const REDACTED = '[REDACTED]';
+
+function normalizeKey(key: string): string {
+  return key.toLowerCase().replace(/[_-]/g, '');
+}
+
+// Claves sensibles de docs/CAMPUSOPS_API.md; se comparan ya normalizadas.
+const SENSITIVE_KEYS: ReadonlySet<string> = new Set(
+  [
+    'authorization', 'password', 'token', 'accessToken', 'refreshToken', 'email', 'displayName', 'name',
+    'userId', 'reporterId', 'technicianId', 'assignedTechnicianId', 'location', 'latitude', 'longitude',
+    'photos', 'evidence', 'internalComments', 'assignmentHistory',
+  ].map(normalizeKey),
+);
+
+function redact(value: unknown, ancestors: WeakSet<object>): unknown {
+  if (typeof value !== 'object' || value === null) return value;
+  if (ancestors.has(value)) return '[Circular]';
+  ancestors.add(value);
+  try {
+    if (Array.isArray(value)) return value.map((item) => redact(item, ancestors));
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [
+        key,
+        SENSITIVE_KEYS.has(normalizeKey(key)) ? REDACTED : redact(item, ancestors),
+      ]),
+    );
+  } finally {
+    ancestors.delete(value);
+  }
+}
+
+export function redactForTelemetry(input: unknown): unknown {
+  return redact(input, new WeakSet());
 }
 
 export function parseRemoteResource(_input: unknown): ParseResult {

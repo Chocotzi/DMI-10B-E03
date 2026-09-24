@@ -1,0 +1,37 @@
+# Hallazgo 3 - datos sensibles en logs / redactForTelemetry (ANTES de la correccion)
+# Rama: week4/security-audit-chocotzi
+# Fecha: 2026-09-24T23:06:28Z
+# Datos de prueba: solo valores ficticios (demo-*, persona@campusops.test) y las incidencias de ejemplo del repositorio en memoria.
+
+$ git grep -n -E 'console\.' -- src App.tsx index.ts
+[exit=1]
+
+$ sed -n '/export function redactForTelemetry/,/^}/p' src/course-evaluation/index.ts
+export function redactForTelemetry(_input: unknown): unknown {
+  return pending('redactForTelemetry');
+}
+[exit=0]
+
+$ npm test -- --ci --runInBand --verbose --no-color src/course-evaluation/redactForTelemetry.test.ts course-tests/public/week-04.test.ts 2>&1 | grep -E '^(PASS|FAIL)|✓|✕|√|×|Tests:|Test Suites:|must be implemented' | awk '!seen[$0]++'
+FAIL src/course-evaluation/redactForTelemetry.test.ts
+    × no filtra tokens de una respuesta de sesión (3 ms)
+    × no filtra técnico asignado ni ubicación de las incidencias del repositorio (1 ms)
+    × redacta la clave access_token sin importar mayúsculas ni separadores
+    × redacta la clave Access-Token sin importar mayúsculas ni separadores
+    × redacta la clave REFRESH_TOKEN sin importar mayúsculas ni separadores
+    × redacta la clave Assigned-Technician-Id sin importar mayúsculas ni separadores
+    × redacta la clave display_name sin importar mayúsculas ni separadores
+    × redacta la clave Internal_Comments sin importar mayúsculas ni separadores
+    × conserva el contexto técnico no sensible (1 ms)
+    × reemplaza el valor completo aunque sea un objeto o una lista (1 ms)
+    × recorre listas y objetos anidados (1 ms)
+    × no muta la entrada
+    × no se cae con referencias circulares y sigue redactando (1 ms)
+    × deja pasar valores primitivos
+    redactForTelemetry must be implemented in the assigned week
+    > 12 |   throw new Error(`${name} must be implemented in the assigned week`);
+FAIL course-tests/public/week-04.test.ts
+  × CampusOps redacts personal and incident-sensitive data while preserving technical context (1 ms)
+Test Suites: 2 failed, 2 total
+Tests:       15 failed, 15 total
+[exit=1]

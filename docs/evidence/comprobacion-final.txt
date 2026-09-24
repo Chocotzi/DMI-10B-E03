@@ -1,0 +1,71 @@
+# Comprobacion final (Parte 9 de la actividad)
+# Rama: week4/security-audit-chocotzi
+# Fecha: 2026-09-24T23:19:51Z
+# Nota: los archivos '?? reports/...' ya estaban sin rastrear antes de esta rama (reportes locales de semanas anteriores); no forman parte de esta entrega y no se agregan.
+
+$ git branch --show-current
+week4/security-audit-chocotzi
+[exit=0]
+
+$ git status --short
+A  docs/evidence/fixture-credenciales-cors.txt
+A  docs/security-audit.md
+?? reports/week-01/public-tests.json
+?? reports/week-01/verify.json
+?? reports/week-02/failure.json
+?? reports/week-03/
+[exit=0]
+
+# 1) .env y variantes: no rastreados, no pendientes de agregar y ausentes del historial de TODAS las ramas
+
+$ git ls-files | grep -E '(^|/)\.env'
+.env.example
+[exit=0]
+
+$ git ls-files --others --exclude-standard | grep -E '(^|/)\.env' || echo 'ninguno sin rastrear'
+ninguno sin rastrear
+[exit=0]
+
+$ git log --all --name-only --format= | grep -E '(^|/)\.env' | sort -u
+.env.example
+[exit=0]
+
+$ ls -a | grep -E '^\.env' 
+.env.example
+[exit=0]
+
+# 2) Escaner de secretos del evaluador del curso sobre el arbol de trabajo
+
+$ PYTHONDONTWRITEBYTECODE=1 python -c "import sys; sys.path.insert(0,'tools'); from pathlib import Path; import course_public_evaluator as e; print('scan_secrets hits =', e.scan_secrets(Path('.').resolve()))"
+scan_secrets hits = []
+[exit=0]
+
+# 3) Patrones de credenciales reales en lo que entrego (docs/, src/, App.tsx)
+
+$ grep -rn -i -E 'AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|eyJhbGci' docs src App.tsx
+-> sin coincidencias
+
+# 4) Datos personales o rutas locales en el documento y en las evidencias (matriculas, correos, rutas de usuario)
+
+$ grep -rn -i -E 'a35[0-9]{8}|@alumno|@gmail|@hotmail|C:.Users|/Users/|OneDrive' docs/security-audit.md docs/evidence
+-> sin coincidencias
+
+# 5) Archivos que cambia esta rama (commits + cambios preparados) respecto a la rama base test/week-03-ci-fix
+
+$ git diff --stat test/week-03-ci-fix
+ .DS_Store                                        | Bin 6148 -> 0 bytes
+ .env.example                                     |   2 +
+ .gitignore                                       |   3 +
+ docs/evidence/ds-store-antes.txt                 |  28 +++
+ docs/evidence/ds-store-despues.txt               |  25 +++
+ docs/evidence/fixture-credenciales-cors.txt      |  42 ++++
+ docs/evidence/gitignore-env-antes.txt            |  25 +++
+ docs/evidence/gitignore-env-despues.txt          |  24 +++
+ docs/evidence/logs-sanitizados-antes.txt         |  37 ++++
+ docs/evidence/logs-sanitizados-despues.txt       |  67 +++++++
+ docs/security-audit.md                           | 234 +++++++++++++++++++++++
+ reports/.DS_Store                                | Bin 6148 -> 0 bytes
+ src/course-evaluation/index.ts                   |  36 +++-
+ src/course-evaluation/redactForTelemetry.test.ts |  95 +++++++++
+ 14 files changed, 616 insertions(+), 2 deletions(-)
+[exit=0]

@@ -1,0 +1,10 @@
+Control SEC-02: telemetría sanitizada
+
+Comando:
+node_modules\\.bin\\jest.cmd --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/security-audit.test.ts
+
+Resultado real:
+La suite security-audit.test.ts terminó correctamente, incluyendo la prueba que espía console.info y confirma que token, correo y ubicación se reemplazan por [REDACTED].
+
+Corrección observada:
+src/security/safeLogger.ts obliga a pasar los detalles por redactForTelemetry antes de escribir el evento.

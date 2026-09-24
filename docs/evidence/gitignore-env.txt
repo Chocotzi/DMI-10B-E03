@@ -1,0 +1,11 @@
+Control SEC-03: protección de archivos de entorno
+
+Comandos:
+git ls-files .env
+git check-ignore .env
+
+Resultado real:
+El primer comando no devolvió ninguna ruta. El segundo devolvió .env, confirmando que el archivo está ignorado y no está versionado.
+
+Prueba adicional:
+security-audit.test.ts comprueba que .gitignore contiene .env y que .env.example sólo declara nombres de variables sin valores de credenciales.

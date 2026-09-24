@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { Buffer } from 'node:buffer';
-import { handleCampusOps } from './campusops.mjs';
+import { COURSE_NEXT_REFRESH_TOKEN, COURSE_REFRESH_TOKEN, COURSE_VALID_TOKEN, handleCampusOps } from './campusops.mjs';
 
 const host = process.env.COURSE_BACKEND_HOST ?? '127.0.0.1';
 const port = Number(process.env.COURSE_BACKEND_PORT ?? 4310);
@@ -43,7 +43,7 @@ const server = createServer(async (request, response) => {
     }
   }
   if (request.method === 'GET' && url.pathname === '/v1/resources') {
-    if (request.headers.authorization !== 'Bearer course-valid-token') {
+    if (request.headers.authorization !== `Bearer ${COURSE_VALID_TOKEN}`) {
       return send(response, 401, { code: 'unauthorized' });
     }
     if (scenario === 'server_error') return send(response, 500, { code: 'controlled_failure' });
@@ -55,10 +55,10 @@ const server = createServer(async (request, response) => {
   }
   if (request.method === 'POST' && url.pathname === '/v1/session/refresh') {
     const input = await readJson(request).catch(() => null);
-    if (!input || input.refreshToken !== 'course-refresh-0' || scenario === 'invalid_refresh') {
+    if (!input || input.refreshToken !== COURSE_REFRESH_TOKEN || scenario === 'invalid_refresh') {
       return send(response, 401, { code: 'invalid_grant' });
     }
-    return send(response, 200, { accessToken: 'course-valid-token', refreshToken: 'course-refresh-1', expiresIn: 60 });
+    return send(response, 200, { accessToken: COURSE_VALID_TOKEN, refreshToken: COURSE_NEXT_REFRESH_TOKEN, expiresIn: 60 });
   }
   if (request.method === 'POST' && url.pathname === '/v1/resources/action') {
     const key = request.headers['idempotency-key'];

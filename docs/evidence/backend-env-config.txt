@@ -1,0 +1,12 @@
+Control SEC-01: configuración de tokens del fixture
+
+Comando:
+node course-backend/self-test.mjs
+
+Resultado real:
+CampusOps backend contracts: roles, reassignment conflict, lost response, idempotency, evidence and geocoding PASS.
+Controlled backend self-test passed.
+
+Corrección observada:
+campusops.mjs exporta COURSE_VALID_TOKEN, COURSE_REFRESH_TOKEN y COURSE_NEXT_REFRESH_TOKEN desde process.env con fallback de fixture local.
+server.mjs importa esos valores y ya no repite los literales en sus comparaciones.

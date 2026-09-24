@@ -1,0 +1,25 @@
+# Hallazgo 1 - variantes de .env (ANTES de la correccion)
+# Rama: week4/security-audit-chocotzi
+# Fecha: 2026-09-24T23:00:08Z
+# Archivos FICTICIOS creados solo para esta prueba y borrados al terminar: .env .env.local .env.production .env.development.local
+# Contenido de cada uno: EXPO_PUBLIC_COURSE_BACKEND_URL=http://demo.invalid / TEST_API_KEY=demo_key_123
+
+$ git status --short | grep -F .env
+?? .env.development.local
+?? .env.local
+?? .env.production
+[exit=0]
+
+$ git add --dry-run . | grep -F .env
+add '.env.development.local'
+add '.env.local'
+add '.env.production'
+[exit=0]
+
+$ git check-ignore -v .env .env.local .env.production .env.development.local .env.example
+.gitignore:8:.env	.env
+[exit=0]
+
+$ git ls-files | grep -F .env
+.env.example
+[exit=0]

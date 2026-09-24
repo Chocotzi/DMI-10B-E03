@@ -1,0 +1,25 @@
+# Hallazgo 2 - archivos .DS_Store en el repositorio (DESPUES de la correccion)
+# Rama: week4/security-audit-chocotzi
+# Fecha: 2026-09-24T23:01:54Z
+# Prueba adicional: se crea un archivo vacio docs/.DS_Store solo para esta captura y se borra al terminar.
+
+$ git ls-files | grep -F .DS_Store
+[exit=1]
+
+$ git log --oneline --diff-filter=A -- .DS_Store reports/.DS_Store
+6295ff7 chore: iniciar CampusOps
+[exit=0]
+
+$ git check-ignore -v .DS_Store reports/.DS_Store docs/.DS_Store
+.gitignore:16:.DS_Store	.DS_Store
+.gitignore:16:.DS_Store	reports/.DS_Store
+.gitignore:16:.DS_Store	docs/.DS_Store
+[exit=0]
+
+$ git status --short | grep -F .DS_Store
+D  .DS_Store
+D  reports/.DS_Store
+[exit=0]
+
+$ git add --dry-run . | grep -F .DS_Store
+[exit=1]

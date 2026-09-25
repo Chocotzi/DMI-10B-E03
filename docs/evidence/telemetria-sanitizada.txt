@@ -1,0 +1,14 @@
+Evidencia: sanitización de telemetría
+Fecha: 2026-09-25
+
+Comando reproducible:
+npm test -- --ci --runInBand course-tests/security-audit.test.ts -t 'elimina secretos'
+
+Resultado observado:
+PASS course-tests/security-audit.test.ts
+✓ elimina secretos y datos personales anidados sin modificar el objeto original
+Test Suites: 1 passed, 1 total
+Tests: 1 passed, 2 skipped, 3 total
+
+La prueba utiliza sólo valores ficticios. Comprueba autorización, correo,
+ubicación y apiKey, además de verificar que la entrada no fue modificada.

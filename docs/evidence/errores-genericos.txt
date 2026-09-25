@@ -1,0 +1,15 @@
+Evidencia: mensajes de error públicos genéricos
+Fecha: 2026-09-25
+
+Comando reproducible:
+npm test -- --ci --runInBand course-tests/security-audit.test.ts -t 'devuelve un error publico generico'
+
+Resultado observado:
+PASS course-tests/security-audit.test.ts
+✓ devuelve un error publico generico ante una respuesta HTTP fallida
+✓ devuelve un error publico generico ante un contrato inesperado
+Test Suites: 1 passed, 1 total
+Tests: 2 passed, 1 skipped, 3 total
+
+Ambos escenarios entregaron "El servicio no está disponible" y la prueba
+negativa confirmó que el mensaje no contiene el estado 503 ni "contract".

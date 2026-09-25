@@ -1,0 +1,15 @@
+Evidencia: comprobación conjunta
+Fecha: 2026-09-25
+
+Comandos reproducibles:
+npm test -- --ci --runInBand course-tests/public/week-04.test.ts course-tests/security-audit.test.ts
+npm run typecheck
+npm run lint
+python3 tools/course_public_evaluator.py --week 4 --mode verify
+
+Resultado observado:
+- Pruebas: 2 suites aprobadas, 4 pruebas aprobadas.
+- TypeScript: terminó con código 0 y sin errores.
+- ESLint: terminó con código 0 y sin errores.
+- Evaluador semana 4 (verify): status pass.
+- Escaneo de secretos del evaluador: pass, hits=[].

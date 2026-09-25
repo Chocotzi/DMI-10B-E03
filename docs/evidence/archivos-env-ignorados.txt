@@ -1,0 +1,15 @@
+Evidencia: protección de archivos de entorno
+Fecha: 2026-09-25
+
+Comandos reproducibles:
+git check-ignore -v --no-index .env .env.local .env.production
+git check-ignore -q --no-index .env.example
+
+Resultado observado:
+.gitignore:8:.env     .env
+.gitignore:9:.env.*   .env.local
+.gitignore:9:.env.*   .env.production
+.env.example: visible para Git (correcto, no contiene secretos)
+
+La segunda comprobación devuelve código 1, que en git check-ignore significa
+que la plantilla no está ignorada.

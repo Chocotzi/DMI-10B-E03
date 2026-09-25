@@ -1,0 +1,11 @@
+Evidencia: metadatos locales fuera del repositorio
+Fecha: 2026-09-25
+
+Comandos reproducibles:
+git check-ignore -v --no-index .DS_Store reports/.DS_Store
+git ls-files '*DS_Store'
+
+Resultado observado:
+.gitignore:11:.DS_Store .DS_Store
+.gitignore:11:.DS_Store reports/.DS_Store
+git ls-files: no hay archivos .DS_Store versionados

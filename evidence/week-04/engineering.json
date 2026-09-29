@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "week": 4,
-  "commitSha": "01f0e753430c8a243babffc325d4f00460a09548",
+  "commitSha": "12d04c493f1acdebd978bef77abf8dded0f17f7a",
   "decision": "Mantener la sesión sólo en memoria para este starter educativo y aplicar redactForTelemetry antes de generar registros. Así los tokens no se persisten en preferencias o archivos y los objetos anidados no exponen datos personales en logs; para producción se requeriría un almacén nativo seguro.",
   "alternatives": [
     "Persistir el token con almacenamiento plano de la aplicación. Es sencillo, pero puede exponer la sesión en archivos, copias de seguridad o inspección local.",

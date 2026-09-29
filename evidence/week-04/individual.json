@@ -5,7 +5,7 @@
   "members": [
     {
       "studentId": "a3523110609",
-      "commitShas": ["01f0e753430c8a243babffc325d4f00460a09548"],
+      "commitShas": ["12d04c493f1acdebd978bef77abf8dded0f17f7a"],
       "files": ["src/security/secureSession.ts", "course-tests/week-04-security.test.ts"],
       "tests": ["npx tsc --noEmit", "npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/week-04-security.test.ts"],
       "reviews": [],

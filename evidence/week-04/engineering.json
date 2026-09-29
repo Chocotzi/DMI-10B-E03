@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "week": 4,
+  "commitSha": "01f0e753430c8a243babffc325d4f00460a09548",
+  "decision": "Mantener la sesión sólo en memoria para este starter educativo y aplicar redactForTelemetry antes de generar registros. Así los tokens no se persisten en preferencias o archivos y los objetos anidados no exponen datos personales en logs; para producción se requeriría un almacén nativo seguro.",
+  "alternatives": [
+    "Persistir el token con almacenamiento plano de la aplicación. Es sencillo, pero puede exponer la sesión en archivos, copias de seguridad o inspección local.",
+    "Usar Expo SecureStore para persistir el token en el almacén protegido del sistema. Es apropiado para producción, pero requiere una dependencia nativa que no forma parte de este starter y añade configuración de plataforma.",
+    "Mantener la sesión sólo en memoria y limpiar explícitamente al cerrar sesión. Reduce la superficie de persistencia y es reproducible en este proyecto, aunque obliga a volver a autenticar después de reiniciar."
+  ],
+  "tradeoff": "La opción elegida evita persistencia accidental y permite comprobar limpieza y sanitización con pruebas deterministas; el costo es perder la sesión al reiniciar y no resolver por sí sola la lectura de memoria durante la ejecución. El riesgo residual se documenta y se recomienda SecureStore con expiración y rotación para producción.",
+  "requirementIds": ["AC-01", "AC-02", "AC-03", "AC-04", "AC-05"],
+  "verification": [
+    {
+      "command": "npx tsc --noEmit",
+      "result": "TypeScript terminó sin errores.",
+      "evidence": "src/security/secureSession.ts y course-tests/week-04-security.test.ts"
+    },
+    {
+      "command": "npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/week-04-security.test.ts course-tests/public/week-04.test.ts",
+      "result": "Las pruebas de sesión, errores y sanitización terminaron correctamente.",
+      "evidence": "course-tests/week-04-security.test.ts y course-tests/public/week-04.test.ts"
+    }
+  ]
+}

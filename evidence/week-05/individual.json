@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "week": 5,
+  "teamId": "DMI-10B-E03",
+  "members": [
+    {
+      "studentId": "a3523110227",
+      "commitShas": ["ded3b47d1c13a7169f02a2db44417414b8ed2626"],
+      "files": ["App.tsx", "src/campusops/ui/IncidentListScreen.tsx", "course-tests/week-05-ui.test.tsx"],
+      "tests": ["npm test -- --ci --runInBand course-tests/week-05-ui.test.tsx"],
+      "reviews": [],
+      "prediction": "La pantalla debe abandonar loading y mostrar un mensaje recuperable ante HTTP 500.",
+      "command": "npm test -- --ci --runInBand course-tests/week-05-ui.test.tsx",
+      "observedResult": "La prueba de UI observó Error del servidor (500) y el botón Reintentar.",
+      "explanation": "Conecté App.tsx y las pantallas al cliente HTTP mediante casos de uso, añadí estados de error y creación con clave idempotente estable."
+    },
+    {
+      "studentId": "a3523110321",
+      "commitShas": ["143654e5ad4433a633ace665e73bef8e5162cb8c"],
+      "files": ["src/campusops/infrastructure/HttpIncidentClient.ts", "docs/api-contract.md"],
+      "tests": ["npm test -- --ci --runInBand course-tests/week-05-client.test.ts"],
+      "reviews": ["Revisión del contrato DTO y resultados success/empty/error"],
+      "prediction": "El cliente debe separar payload null, contrato inválido, timeout y HTTP 500.",
+      "command": "npm test -- --ci --runInBand course-tests/week-05-client.test.ts",
+      "observedResult": "La suite del cliente pasó con los casos de DTO, creación, timeout y errores HTTP.",
+      "explanation": "Aportación del equipo integrada previamente en el cliente HTTP y su contrato."
+    },
+    {
+      "studentId": "a3523110609",
+      "commitShas": ["143654e5ad4433a633ace665e73bef8e5162cb8c"],
+      "files": ["course-tests/week-05-backend-integration.test.ts", "reports/week-05/failure-matrix.json"],
+      "tests": ["npm test -- --ci --runInBand course-tests/week-05-backend-integration.test.ts"],
+      "reviews": ["Revisión de variantes locales del backend"],
+      "prediction": "El backend local debe reproducir nullable, malformed, slow, server_error y replay idempotente.",
+      "command": "npm test -- --ci --runInBand course-tests/week-05-backend-integration.test.ts",
+      "observedResult": "La integración local pasó con las variantes controladas y replay sin duplicado.",
+      "explanation": "Aportación del equipo integrada previamente en las pruebas de backend y la matriz de fallos."
+    }
+  ]
+}

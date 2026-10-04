@@ -1,9 +1,18 @@
 {
   "schemaVersion": 1,
   "week": 5,
-  "commitSha": "143654e5ad4433a633ace665e73bef8e5162cb8c",
+  "commitSha": "ded3b47d1c13a7169f02a2db44417414b8ed2626",
   "generatedAt": "2026-10-04T22:52:35Z",
   "checks": [
+    {
+      "id": "ui-http-composition",
+      "status": "pass",
+      "scenarioType": "failure",
+      "command": "npm test -- --ci --runInBand course-tests/week-05-ui.test.tsx",
+      "expected": "La pantalla consume el resultado del caso de uso y sale de carga ante HTTP 500.",
+      "observed": "PASS: muestra Error del servidor (500) y ofrece Reintentar.",
+      "evidence": "course-tests/week-05-ui.test.tsx."
+    },
     {
       "id": "sobre-remoto-y-payload-null",
       "status": "pass",

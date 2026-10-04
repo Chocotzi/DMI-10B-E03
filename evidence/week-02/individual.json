@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "week": 2,
+  "teamId": "DMI-10B-E03",
+  "members": [
+    {
+      "studentId": "a3523110609",
+      "commitShas": [
+        "dcad00935318ba72e219c1a7ba669c1b22bbd58d",
+        "bd61fbd16f7390904a5a5d7018413cb8cb85d658",
+        "ed4a3a8d0b7c184b00e9ce6385d03b757ff3c8fb",
+        "1cfe8641a899ddfc674cb2f66aaeefacecf14cf8"
+      ],
+      "files": [
+        ".github/workflows/week-02-arquitectura-justificable-feedback.yml",
+        ".github/workflows/week-01-feedback.yml",
+        "docs/adr/ADR-001-architecture.md",
+        "docs/architecture.mmd",
+        "Makefile"
+      ],
+      "tests": [
+        "python tools/course_public_evaluator.py --week 2 --mode verify --execute-toolchain",
+        "python tools/course_public_evaluator.py --week 2 --mode public --execute-toolchain",
+        "python tools/course_public_evaluator.py --week 1 --mode public",
+        "npm test -- --ci --runInBand course-tests/public/week-02.test.ts",
+        "node tools/check-architecture.mjs"
+      ],
+      "reviews": [
+        "Revision de 3388cd1 (a3523110321) y 6817fcc (a3523110227) antes de integrarlos en integracion/semana-02-merge: se comprobo que fix/semana-02-arquitectura desciende de dev-cleber (historia lineal, dos merges fast-forward sin conflictos), que la composicion quedo en App.tsx lineas 10-13 y que src/campusops/ui ya no importa infrastructure; se reprodujo la violacion sobre el snapshot 3388cd1 con el checker antes de aceptar la correccion."
+      ],
+      "prediction": "Restaurar fetch-depth: 0 en los dos workflows haria que actions/checkout trajera historial completo y tags, necesarios para que el evaluador resuelva HEAD^ (commit exclusivo de evidencias) y git rev-list -n 1 week-02-final; pero no haria pasar el job de semana 1 en commits posteriores, porque su evidencia fija el SHA b9ab654 que ya no es HEAD ni HEAD^.",
+      "command": "python tools/course_public_evaluator.py --week 1 --mode public; python tools/course_public_evaluator.py --week 2 --mode public --execute-toolchain",
+      "observedResult": "Con historial completo, el evaluador de semana 1 en modo public termina en status fail unicamente por schema:reports/week-01/baseline.json y schema:evidence/week-01/engineering.json ('commitSha must be HEAD or its direct evidence-only parent'), el mismo paso 'Public Week 01 tests' que falla en GitHub Actions en dev-cleber (run 34729480872), fix/semana-02-arquitectura (run 34764062277) y main en cc196ea (run 34401470165). El evaluador de semana 2 en modo public termina con status pass sobre 1cfe864: required_evidence, los tres schema:* y los cuatro toolchain_* (typecheck, lint, audit:ci y la prueba publica week-02) en pass.",
+      "explanation": "El fetch-depth insuficiente fue la causa del fallo de semana 1 corregido en b9ab654, y cc196ea lo habia regresado a 2; restaurar 0 en .github/workflows/week-01-feedback.yml linea 28 y anadirlo en .github/workflows/week-02-arquitectura-justificable-feedback.yml lineas 24-25 garantiza que el checkout del workflow de semana 2 tenga HEAD^ y el tag week-02-final cuando ejecute make evidence-week-02. El fallo persistente del job de semana 1 en commits posteriores es estructural (su evidencia esta congelada en el tag week-01-final, cuyo run 34087697601 si paso), no un defecto del checkout. Ademas consolide docs/adr/ADR-001-architecture.md (alternativas A/B/C y comparacion en las lineas 13-46, decision y limites en 48-69, discrepancia corregida en 71-83, consecuencias en 85-98), rehice docs/architecture.mmd (raiz de composicion en las lineas 11-13, capas UI/Application/Domain/Infrastructure en 15-45, perfiles de usuario en 7-9 y 47-50, inversion de dependencias en 80-85) y anadi check:architecture a la receta verify del Makefile (linea 12) para que make feedback y CI ejecuten la regla de capas."
+    },
+    {
+      "studentId": "a3523110227",
+      "commitShas": ["6817fccfdb40822e320be99528ae8669cadc5cbe"],
+      "files": [
+        "tools/check-architecture.mjs",
+        "src/campusops/ui/IncidentListScreen.tsx",
+        "src/campusops/ui/IncidentDetailScreen.tsx",
+        "App.tsx",
+        "package.json",
+        "reports/week-02/dependencies.json"
+      ],
+      "tests": [
+        "node tools/check-architecture.mjs",
+        "npm test -- --ci --runInBand course-tests/public/week-02.test.ts"
+      ],
+      "reviews": [],
+      "prediction": "El checker de imports debia senalar las dos importaciones de ../infrastructure/InMemoryIncidentRepository en las pantallas y, tras mover la composicion a App.tsx y pasar los casos de uso por props, terminar sin violaciones y con codigo de salida 0.",
+      "command": "node tools/check-architecture.mjs",
+      "observedResult": "Antes de la correccion: 'Architecture violations detected:' con dos lineas (IncidentDetailScreen.tsx e IncidentListScreen.tsx: ui -> infrastructure) y codigo de salida 1. Despues: 'Architecture boundaries pass: no forbidden layer imports found.' y codigo de salida 0; la prueba publica week-02 termino con 1 test y 1 suite aprobados. Registrado en la version original de reports/week-02/dependencies.json (6817fcc) y reproducido en la integracion sobre 1cfe864.",
+      "explanation": "tools/check-architecture.mjs (lineas 6-11) codifica la regla de dependencia por capa y recorre los imports de src/campusops acumulando violaciones (linea 36) y fijando exit code 1 (linea 44); las pantallas dejaron de importar infraestructura (IncidentListScreen.tsx lineas 3-4 e IncidentDetailScreen.tsx lineas 3-4 solo importan de ../domain y ../application, y reciben el caso de uso por props en las lineas 8 y 9 respectivamente); App.tsx (lineas 8-13) paso a ser la raiz de composicion que instancia el repositorio y construye los casos de uso; el script check:architecture quedo en package.json linea 17."
+    },
+    {
+      "studentId": "a3523110321",
+      "commitShas": ["3388cd1c4093c2b9433e52f5df8dae085a1d1c83"],
+      "files": [
+        "src/campusops/domain/Incident.ts",
+        "src/campusops/domain/IncidentRepository.ts",
+        "src/campusops/application/GetIncidentsUseCase.ts",
+        "src/campusops/application/GetIncidentDetailUseCase.ts",
+        "src/campusops/infrastructure/InMemoryIncidentRepository.ts",
+        "src/campusops/ui/IncidentListScreen.tsx",
+        "src/campusops/ui/IncidentDetailScreen.tsx",
+        "docs/architecture.mmd",
+        "docs/adr/ADR-001-architecture.md"
+      ],
+      "tests": [
+        "npm run typecheck",
+        "npm run lint",
+        "npm run test:smoke"
+      ],
+      "reviews": [],
+      "prediction": "Las cuatro carpetas nuevas debian compilar en modo estricto (strict, exactOptionalPropertyTypes, noUncheckedIndexedAccess), pasar eslint y el smoke test debia seguir encontrando 'CampusOps' y 'Backend: available' con la lista de incidencias ficticias montada desde App.tsx.",
+      "command": "npm run typecheck && npm run lint && npm run test:smoke",
+      "observedResult": "En el push de 3388cd1 el workflow Starter Public Feedback (run 34729475863) termino en success con TypeScript build check, Lint, Public smoke tests, Public dependency gate y Expo Android bundle en ok; en la integracion local sobre 1cfe864 los tres comandos terminan con codigo de salida 0 y el smoke test pasa (Tests: 1 passed, 1 total).",
+      "explanation": "src/campusops/domain/Incident.ts (linea 3) define la entidad sobre el vocabulario de contracts.ts; src/campusops/domain/IncidentRepository.ts (lineas 3-6) es el puerto que invierte la dependencia; los casos de uso reciben el puerto por constructor (GetIncidentsUseCase.ts y GetIncidentDetailUseCase.ts, lineas 4-10); src/campusops/infrastructure/InMemoryIncidentRepository.ts (lineas 37-46) lo implementa con dos incidencias ficticias, y las pantallas consumen los casos de uso. La primera version importaba el adaptador desde la UI (lineas 5 y 7 de IncidentListScreen.tsx en 3388cd1), discrepancia con el diagrama que se corrigio en 6817fcc y que documenta la seccion 'Discrepancia detectada' del ADR consolidado."
+    }
+  ]
+}

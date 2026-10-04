@@ -9,6 +9,7 @@ setup:
 verify:
 	$(NPM) run typecheck
 	$(NPM) run lint
+	$(NPM) run check:architecture
 	$(NPM) run test:smoke
 
 feedback: verify

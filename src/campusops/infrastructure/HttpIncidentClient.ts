@@ -1,6 +1,7 @@
 import { parseRemoteResource } from '../../course-evaluation';
 import type { IncidentCategory, IncidentStatus } from '../contracts';
 import type { Incident } from '../domain/Incident';
+import type { ClientResult } from '../domain/IncidentRepository';
 
 const categories: readonly IncidentCategory[] = [
   'electrical', 'laboratory', 'water', 'connectivity',
@@ -10,15 +11,7 @@ const statuses: readonly IncidentStatus[] = [
   'open', 'assigned', 'in_progress', 'resolved', 'closed',
 ];
 
-type Failure = Readonly<{
-  kind: 'error';
-  code: 'invalid_request' | 'invalid_contract' | 'timeout' | 'network' | 'server' | 'http';
-  status?: number;
-}>;
-export type ClientResult<T> =
-  | Readonly<{ kind: 'success'; value: T; unavailableIds?: readonly string[] }>
-  | Readonly<{ kind: 'empty'; id: string; reason: 'null_payload' }>
-  | Failure;
+export type { ClientResult } from '../domain/IncidentRepository';
 
 export type CreateIncidentInput = Readonly<{
   category: IncidentCategory;

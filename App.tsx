@@ -7,10 +7,15 @@ import { IncidentListScreen } from './src/campusops/ui/IncidentListScreen';
 import { IncidentDetailScreen } from './src/campusops/ui/IncidentDetailScreen';
 import { GetIncidentsUseCase } from './src/campusops/application/GetIncidentsUseCase';
 import { GetIncidentDetailUseCase } from './src/campusops/application/GetIncidentDetailUseCase';
-import { incidentRepository } from './src/campusops/infrastructure/InMemoryIncidentRepository';
+import { HttpIncidentClient } from './src/campusops/infrastructure/HttpIncidentClient';
+import { setSecureSession } from './src/security/secureSession';
+import { CreateIncidentUseCase } from './src/campusops/application/CreateIncidentUseCase';
 
-const getIncidentsUseCase = new GetIncidentsUseCase(incidentRepository);
-const getIncidentDetailUseCase = new GetIncidentDetailUseCase(incidentRepository);
+const client = new HttpIncidentClient({ baseUrl: process.env.EXPO_PUBLIC_COURSE_BACKEND_URL ?? 'http://127.0.0.1:4310', actorId: 'reporter-1', accessToken: 'course-valid-token' });
+setSecureSession({ actorId: 'reporter-1', accessToken: 'course-valid-token', expiresAt: Date.now() + 60000 });
+const getIncidentsUseCase = new GetIncidentsUseCase(client);
+const getIncidentDetailUseCase = new GetIncidentDetailUseCase(client);
+const createIncidentUseCase = new CreateIncidentUseCase(client);
 
 export default function App() {
   const [status, setStatus] = useState<'checking' | 'available' | 'offline'>('checking');
@@ -46,6 +51,7 @@ export default function App() {
           <IncidentListScreen
             onSelectIncident={(id) => setSelectedIncidentId(id)}
             getIncidentsUseCase={getIncidentsUseCase}
+            createIncident={(input) => createIncidentUseCase.execute(input)}
           />
         )}
       </View>

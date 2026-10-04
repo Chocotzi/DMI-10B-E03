@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "week": 5,
-  "commitSha": "6b2267edce08ffc072bbde86b555a4a3540f1e7d",
+  "commitSha": "143654e5ad4433a633ace665e73bef8e5162cb8c",
   "decision": "La frontera de red está en HttpIncidentClient: parseRemoteResource valida el sobre común y el adaptador valida el payload de incidencias antes de construir Incident. Las operaciones devuelven success, empty o error tipados; el payload null conserva su significado de dato ausente. El cliente acepta fetch inyectado para repetir casos sin Internet y deja a la capa de aplicación la presentación de cada estado.",
   "alternatives": [
     "Hacer fetch desde las pantallas y convertir la respuesta allí: menos archivos iniciales, pero duplica validación, acopla la UI al DTO y dificulta probar timeout y malformación.",
@@ -14,7 +14,7 @@
     {
       "command": "npm test -- --ci --runInBand course-tests/public/week-05.test.ts course-tests/week-05-client.test.ts",
       "result": "2 suites y 11 pruebas aprobadas; nullable, DTO/modelo, creación, malformación, timeout, HTTP 500, HTTP 429 y fallo de red producen los resultados esperados.",
-      "evidence": "reports/week-05/contract-tests.json y reports/week-05/failure-matrix.json, ambos referidos al commit de código 6b2267edce08ffc072bbde86b555a4a3540f1e7d."
+      "evidence": "reports/week-05/contract-tests.json y reports/week-05/failure-matrix.json, ambos referidos al commit integrado 143654e5ad4433a633ace665e73bef8e5162cb8c."
     },
     {
       "command": "npm test -- --ci --runInBand course-tests/week-05-backend-integration.test.ts",

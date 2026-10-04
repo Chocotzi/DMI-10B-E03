@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "week": 5,
+  "commitSha": "6b2267edce08ffc072bbde86b555a4a3540f1e7d",
+  "generatedAt": "2026-10-04T22:42:40Z",
+  "checks": [
+    {
+      "id": "sobre-remoto-y-payload-null",
+      "status": "pass",
+      "scenarioType": "boundary",
+      "command": "npm test -- --ci --runInBand course-tests/public/week-05.test.ts course-tests/week-05-client.test.ts",
+      "expected": "Sobres válidos, incluido payload null, pasan; versión fraccional y arreglo en payload fallan.",
+      "observed": "PASS: parseRemoteResource devolvió ok true para payload null y ok false para los dos formatos inválidos.",
+      "evidence": "course-tests/public/week-05.test.ts y course-tests/week-05-client.test.ts; 2 suites, 11 pruebas aprobadas."
+    },
+    {
+      "id": "dto-frente-a-modelo-app",
+      "status": "pass",
+      "scenarioType": "nominal",
+      "command": "npm test -- --ci --runInBand course-tests/week-05-client.test.ts",
+      "expected": "GET lista conserva id, versión y datos de dominio; usa location textual como etiqueta manual y no crea createdAt.",
+      "observed": "PASS: el modelo coincidió con campos derivados del DTO, sin createdAt inventado, y la solicitud incluyó X-Course-Actor.",
+      "evidence": "Caso 'list maps DTO to app model without adding absent server data'."
+    },
+    {
+      "id": "creacion-idempotente",
+      "status": "pass",
+      "scenarioType": "nominal",
+      "command": "npm test -- --ci --runInBand course-tests/week-05-client.test.ts",
+      "expected": "POST envía categoría, descripción y ubicación, con Idempotency-Key estable; valida el sobre de respuesta.",
+      "observed": "PASS: el mock recibió POST /v1/incidents, cuerpo exacto y clave create-001; resultado success.",
+      "evidence": "Caso 'create sends stable idempotency key and validates response'."
+    },
+    {
+      "id": "backend-variantes-locales",
+      "status": "pass",
+      "scenarioType": "boundary",
+      "command": "npm test -- --ci --runInBand course-tests/week-05-backend-integration.test.ts",
+      "expected": "El cliente consume éxito y nullable del backend real, y la misma clave de creación devuelve duplicate true sin nuevo ID.",
+      "observed": "PASS: lista success con campus-inc-001, detalle nullable empty y replay de creación con ID idéntico y duplicate true; 1 prueba aprobada.",
+      "evidence": "course-tests/week-05-backend-integration.test.ts; backend en 127.0.0.1 con puerto temporal, sin Internet público."
+    },
+    {
+      "id": "backend-local",
+      "status": "pass",
+      "scenarioType": "boundary",
+      "command": "npm run backend:self-test",
+      "expected": "El simulador local comprueba filtros por rol, creación, replay idempotente y respuesta perdida, sin proveedor externo.",
+      "observed": "Controlled backend self-test passed; CampusOps backend contracts ... PASS.",
+      "evidence": "course-backend/self-test.mjs y course-backend/campusops-self-test.mjs; ejecución local autorizada sobre 127.0.0.1."
+    }
+  ]
+}

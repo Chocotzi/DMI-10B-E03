@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "week": 5,
+  "commitSha": "6b2267edce08ffc072bbde86b555a4a3540f1e7d",
+  "decision": "La frontera de red está en HttpIncidentClient: parseRemoteResource valida el sobre común y el adaptador valida el payload de incidencias antes de construir Incident. Las operaciones devuelven success, empty o error tipados; el payload null conserva su significado de dato ausente. El cliente acepta fetch inyectado para repetir casos sin Internet y deja a la capa de aplicación la presentación de cada estado.",
+  "alternatives": [
+    "Hacer fetch desde las pantallas y convertir la respuesta allí: menos archivos iniciales, pero duplica validación, acopla la UI al DTO y dificulta probar timeout y malformación.",
+    "Usar un cliente HTTP con resultados tipados y fetch inyectable (elegido): centraliza timeout, encabezados y validación; permite pruebas deterministas y separar el modelo de la app.",
+    "Lanzar excepciones por todo fallo y capturarlas en cada pantalla: usa la propagación estándar, pero puede dejar promesas sin controlar y confundir payload null con error."
+  ],
+  "tradeoff": "Se añade un adaptador y un mapeo explícito, y cada consumidor debe atender tres variantes. A cambio, un payload inválido no llega a UI, el error 500 no se muestra como lista vacía y los casos reproducibles usan el mismo cliente que consumirá la app. El backend no envía createdAt, por lo que se hizo opcional en el modelo; title reutiliza la descripción en vez de inventar un título.",
+  "requirementIds": ["AC-02", "AC-03", "AC-04"],
+  "verification": [
+    {
+      "command": "npm test -- --ci --runInBand course-tests/public/week-05.test.ts course-tests/week-05-client.test.ts",
+      "result": "2 suites y 11 pruebas aprobadas; nullable, DTO/modelo, creación, malformación, timeout, HTTP 500, HTTP 429 y fallo de red producen los resultados esperados.",
+      "evidence": "reports/week-05/contract-tests.json y reports/week-05/failure-matrix.json, ambos referidos al commit de código 6b2267edce08ffc072bbde86b555a4a3540f1e7d."
+    },
+    {
+      "command": "npm test -- --ci --runInBand course-tests/week-05-backend-integration.test.ts",
+      "result": "1 prueba de integración aprobada con variantes reales success, nullable, malformed, slow y server_error, además de replay idempotente de creación.",
+      "evidence": "course-tests/week-05-backend-integration.test.ts y reports/week-05/failure-matrix.json; backend local en puerto temporal."
+    },
+    {
+      "command": "npm run backend:self-test",
+      "result": "Controlled backend self-test passed, incluido replay sin duplicado tras respuesta perdida.",
+      "evidence": "course-backend/campusops-self-test.mjs y reports/week-05/contract-tests.json."
+    },
+    {
+      "command": "npm run typecheck && npm run lint && npm run check:architecture",
+      "result": "TypeScript y ESLint sin diagnósticos; checker informa que no hay imports de capa prohibidos.",
+      "evidence": "src/campusops/infrastructure/HttpIncidentClient.ts y tools/check-architecture.mjs."
+    }
+  ]
+}

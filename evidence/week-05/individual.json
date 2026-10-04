@@ -5,7 +5,7 @@
   "members": [
     {
       "studentId": "a3523110227",
-      "commitShas": ["ded3b47d1c13a7169f02a2db44417414b8ed2626"],
+      "commitShas": ["727ef3f99e76743c6c4cb88bac7d26ceaea66681", "ded3b47d1c13a7169f02a2db44417414b8ed2626"],
       "files": ["App.tsx", "src/campusops/ui/IncidentListScreen.tsx", "course-tests/week-05-ui.test.tsx"],
       "tests": ["npm test -- --ci --runInBand course-tests/week-05-ui.test.tsx"],
       "reviews": [],
@@ -16,7 +16,7 @@
     },
     {
       "studentId": "a3523110321",
-      "commitShas": ["143654e5ad4433a633ace665e73bef8e5162cb8c"],
+      "commitShas": ["249638131524bb5c55906ad0abac979f2fccafa5", "6b2267edce08ffc072bbde86b555a4a3540f1e7d"],
       "files": ["src/campusops/infrastructure/HttpIncidentClient.ts", "docs/api-contract.md"],
       "tests": ["npm test -- --ci --runInBand course-tests/week-05-client.test.ts"],
       "reviews": ["Revisión del contrato DTO y resultados success/empty/error"],

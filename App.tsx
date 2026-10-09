@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Button, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
 import { getBackendHealth } from './src/api/courseBackend';
@@ -8,18 +8,14 @@ import { IncidentDetailScreen } from './src/campusops/ui/IncidentDetailScreen';
 import { GetIncidentsUseCase } from './src/campusops/application/GetIncidentsUseCase';
 import { GetIncidentDetailUseCase } from './src/campusops/application/GetIncidentDetailUseCase';
 import { HttpIncidentClient } from './src/campusops/infrastructure/HttpIncidentClient';
-import { setSecureSession } from './src/security/secureSession';
+import { clearSecureSession, getSecureSession, setSecureSession } from './src/security/secureSession';
 import { CreateIncidentUseCase } from './src/campusops/application/CreateIncidentUseCase';
-
-const client = new HttpIncidentClient({ baseUrl: process.env.EXPO_PUBLIC_COURSE_BACKEND_URL ?? 'http://127.0.0.1:4310', actorId: 'reporter-1', accessToken: 'course-valid-token' });
-setSecureSession({ actorId: 'reporter-1', accessToken: 'course-valid-token', expiresAt: Date.now() + 60000 });
-const getIncidentsUseCase = new GetIncidentsUseCase(client);
-const getIncidentDetailUseCase = new GetIncidentDetailUseCase(client);
-const createIncidentUseCase = new CreateIncidentUseCase(client);
 
 export default function App() {
   const [status, setStatus] = useState<'checking' | 'available' | 'offline'>('checking');
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
+  const [actorId, setActorId] = useState<string | null>(() => getSecureSession()?.actorId ?? null);
+  const client = actorId ? new HttpIncidentClient({ baseUrl: process.env.EXPO_PUBLIC_COURSE_BACKEND_URL ?? 'http://127.0.0.1:4310', actorId, accessToken: 'course-valid-token' }) : null;
 
   useEffect(() => {
     let active = true;
@@ -41,19 +37,22 @@ export default function App() {
       <View style={styles.content}>
         {status === 'checking' ? (
           <Text>Conectando con el backend...</Text>
+        ) : !client ? (
+          <View style={styles.login}><Text style={styles.title}>Selecciona un actor</Text>{['reporter-1', 'technician-1', 'coordinator-1'].map(actor => <Button key={actor} title={`Entrar como ${actor}`} onPress={() => { setSecureSession({ actorId: actor, accessToken: 'course-valid-token', expiresAt: Date.now() + 60000 }); setActorId(actor); }} />)}</View>
         ) : selectedIncidentId ? (
           <IncidentDetailScreen
             incidentId={selectedIncidentId}
             onBack={() => setSelectedIncidentId(null)}
-            getIncidentDetailUseCase={getIncidentDetailUseCase}
+            getIncidentDetailUseCase={new GetIncidentDetailUseCase(client)}
           />
         ) : (
           <IncidentListScreen
             onSelectIncident={(id) => setSelectedIncidentId(id)}
-            getIncidentsUseCase={getIncidentsUseCase}
-            createIncident={(input) => createIncidentUseCase.execute(input)}
+            getIncidentsUseCase={new GetIncidentsUseCase(client)}
+            createIncident={(input) => new CreateIncidentUseCase(client).execute(input)}
           />
         )}
+        {client && <Button title="Cerrar sesión" onPress={() => { clearSecureSession(); setActorId(null); setSelectedIncidentId(null); }} />}
       </View>
       <StatusBar style="auto" />
     </View>
@@ -65,4 +64,5 @@ const styles = StyleSheet.create({
   card: { gap: 12, padding: 20, backgroundColor: 'white', borderBottomWidth: 1, borderColor: '#ddd' },
   title: { fontSize: 24, fontWeight: '700' },
   content: { flex: 1 }
+  ,login: { gap: 12, padding: 24 }
 });

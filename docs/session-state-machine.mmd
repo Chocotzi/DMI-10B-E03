@@ -1,0 +1,11 @@
+stateDiagram-v2
+  [*] --> Anonimo
+  Anonimo --> Autenticando: seleccionar actor / login
+  Autenticando --> Autenticado: credenciales válidas
+  Autenticando --> Anonimo: login rechazado
+  Autenticado --> Expirado: access token vencido / 401
+  Expirado --> Renovando: existe refresh token
+  Renovando --> Autenticado: refresh único exitoso
+  Renovando --> CierreSeguro: refresh falla o devuelve 401
+  Autenticado --> CierreSeguro: logout
+  CierreSeguro --> Anonimo: borrar tokens en memoria y persistencia

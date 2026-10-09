@@ -1,5 +1,6 @@
 export type SecureSession = Readonly<{
   accessToken: string;
+  refreshToken?: string;
   actorId: string;
   expiresAt: number;
 }>;

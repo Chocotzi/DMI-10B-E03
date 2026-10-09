@@ -38,14 +38,58 @@ export function parseRemoteResource(input: unknown): ParseResult {
   } };
 }
 
-export function coordinateRefresh(_events: readonly AuthEvent[]): Readonly<{
+export function coordinateRefresh(events: readonly AuthEvent[]): Readonly<{
   status: 'anonymous' | 'authenticated';
   activeGeneration: number | null;
   refreshCalls: number;
   retriedRequestIds: readonly string[];
   persistedToken: string | null;
 }> {
-  return pending('coordinateRefresh');
+  let status: 'anonymous' | 'authenticated' = 'authenticated';
+  let activeGeneration: number | null = 0;
+  let refreshCalls = 0;
+  let persistedToken: string | null = null;
+  const retriedRequestIds: string[] = [];
+  let isRefreshing = false;
+
+  for (const event of events) {
+    if (event.type === 'logout') {
+      status = 'anonymous';
+      persistedToken = null;
+      activeGeneration = null;
+      isRefreshing = false;
+    } else if (event.type === 'request401') {
+      if (!isRefreshing) {
+        refreshCalls++;
+        isRefreshing = true;
+      }
+      if (event.requestId) {
+        retriedRequestIds.push(event.requestId);
+      }
+    } else if (event.type === 'refreshSucceeded') {
+      status = 'authenticated';
+      isRefreshing = false;
+      if (event.generation !== undefined) {
+        activeGeneration = event.generation;
+      }
+      if (event.token) {
+        persistedToken = event.token;
+      }
+    } else if (event.type === 'refreshFailed') {
+      status = 'anonymous';
+      persistedToken = null;
+      activeGeneration = null;
+      isRefreshing = false;
+    }
+  }
+
+  return {
+    status,
+    activeGeneration,
+    refreshCalls,
+    retriedRequestIds,
+    persistedToken,
+  };
 }
 
 export function resolveSync(

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "week": 6,
-  "commitSha": "9fde7448578984fede46d381544fd19f4ac7af7f",
+  "commitSha": "f77dff101a101b9d58908819a816e0822729a741",
   "decision": "Implementamos una política de single-flight para la renovación de tokens en coordinateRefresh. Ante respuestas 401 concurrentes, agrupamos las peticiones para emitir un solo refresh y reintentamos cada petición fallida exactamente 1 vez para evitar bucles infinitos. Ante una respuesta de fallback (fallo o logout), el estado retorna de manera segura a no autenticado (anonymous) eliminando el token persistido.",
   "alternatives": [
     "Reintentar infinitamente hasta obtener éxito: riesgoso por los bucles infinitos ante tokens revocados.",

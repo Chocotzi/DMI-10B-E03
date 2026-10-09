@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "week": 6,
+  "commitSha": "f77dff101a101b9d58908819a816e0822729a741",
+  "generatedAt": "2026-10-09T00:00:00.000Z",
+  "checks": [
+    { "id": "login-and-rbac", "status": "pass", "scenarioType": "nominal", "command": "npm test -- --ci --runInBand course-tests/week-06-auth-integration.test.ts", "evidence": "Login del actor ficticio respondió 200; reportante y técnico no autorizados recibieron 403; coordinador recibió 200." },
+    { "id": "server-side-actions", "status": "pass", "scenarioType": "boundary", "command": "npm test -- --ci --runInBand course-tests/week-06-auth-integration.test.ts", "evidence": "El servidor rechazó close del reportante con 403 y aceptó start del técnico asignado con 201." },
+    { "id": "safe-fallback-and-logout", "status": "pass", "scenarioType": "failure", "command": "npm test -- --ci --runInBand course-tests/week-06.test.ts", "evidence": "coordinateRefresh retorna anonymous y persistedToken null ante logout o refresh fallido." }
+  ]
+}

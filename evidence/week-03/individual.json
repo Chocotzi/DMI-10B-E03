@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "week": 3,
+  "teamId": "DMI-10B-E03",
+  "members": [
+    {
+      "studentId": "a3523110321",
+      "commitShas": ["2f2692496e7af53e0773d6641ad90dacb47d4931"],
+      "files": ["docs/threat-model.md"],
+      "tests": ["npm test -- --ci --runInBand course-tests/public/week-03.test.ts", "make verify-week-03"],
+      "reviews": ["Se contrastaron activos, fronteras, perfiles, autorización y datos ficticios con docs/CAMPUSOPS.md y docs/CAMPUSOPS_API.md; cada T1–T4 se enlazó con un comando ejecutable ya presente."],
+      "prediction": "Si T1 se validara sólo ocultando la interfaz, reporter-2 podría construir la URL de campus-inc-001 y obtener datos; la prueba HTTP debe exigir que el backend responda 403.",
+      "command": "npm test -- --ci --runInBand course-tests/public/week-03.test.ts && make verify-week-03",
+      "observedResult": "PASS: 2 pruebas públicas pasaron y el evaluador de semana 3 terminó pass con typecheck, lint, audit de severidad crítica y smoke test en pass sobre 2f2692496e7af53e0773d6641ad90dacb47d4931.",
+      "explanation": "El commit docs(week-03): threat model documenta el alcance ficticio, los seis activos solicitados, cinco fronteras de confianza y la tabla T1–T4 con probabilidad, impacto, prioridad, control, verificación y riesgo residual. La decisión prioriza T1 porque la autorización debe ocurrir en el servicio y no depender de controles visuales."
+    },
+    {
+      "studentId": "a3523110227",
+      "commitShas": ["f6e951b106e37dbdb25b7371b2dbb4f101180918", "6d12514c34d0d790bf7b76e503e23d0f4b2c374b"],
+      "files": ["course-tests/T1-acceso-incidencias-ajenas.test.ts", "course-tests/T2-reasignacion-sin-permiso.test.ts", "course-tests/T3-sanitizacion-telemetria.test.ts", "course-tests/T4-secret-scan.test.ts", "src/security/redactForTelemetry.ts", "tools/secret-scan.mjs"],
+      "tests": ["npm test -- --ci --runInBand course-tests/T1-acceso-incidencias-ajenas.test.ts course-tests/T2-reasignacion-sin-permiso.test.ts course-tests/T3-sanitizacion-telemetria.test.ts course-tests/T4-secret-scan.test.ts"],
+      "reviews": [],
+      "prediction": "Las solicitudes de reporter-2 para una incidencia ajena y de reporter-1 para assign deben devolver 403; la telemetría no debe conservar token, correo o ubicación, y el escáner debe fallar ante una clave ficticia temporal.",
+      "command": "npm test -- --ci --runInBand course-tests/T1-acceso-incidencias-ajenas.test.ts course-tests/T2-reasignacion-sin-permiso.test.ts course-tests/T3-sanitizacion-telemetria.test.ts course-tests/T4-secret-scan.test.ts",
+      "observedResult": "PASS: 4 suites y 4 pruebas pasaron; T1/T2 observaron HTTP 403, T3 redacción de campos sensibles y T4 detección esperada de 'test API key'.",
+      "explanation": "Las pruebas dan trazabilidad ejecutable a T1–T4. redactForTelemetry normaliza claves y sustituye valores sensibles por [REDACTED] sin mutar la entrada; el escáner sólo usa patrones de demostración y la prueba limpia el archivo temporal en finally."
+    },
+    {
+      "studentId": "a3523110609",
+      "commitShas": ["95796d741d3786b7aeec2ccf71a79122b7986036"],
+      "files": [".github/workflows/week-03-ci-amenazas-feedback.yml"],
+      "tests": ["npm test -- --ci --runInBand course-tests/public/week-03.test.ts"],
+      "reviews": ["Se revisó que el checkout del workflow tenga fetch-depth: 0, Node 22, make setup, bundle Android, verificadores de semana 3, artefactos y permissions: contents: read sin bypasses."],
+      "prediction": "Sin historial completo, el evaluador no puede contrastar correctamente SHA, padre de evidencias y etiqueta; con fetch-depth: 0 el workflow conserva la historia necesaria sin elevar permisos.",
+      "command": "npm test -- --ci --runInBand course-tests/public/week-03.test.ts",
+      "observedResult": "PASS: la prueba pública confirmó actions/setup-node@v4, Node 22, instalación reproducible, ausencia de bypasses y permissions: contents: read.",
+      "explanation": "El ajuste de checkout deja disponible el historial requerido por el contrato de evidencia y conserva mínimo privilegio. El workflow ejecuta las comprobaciones obligatorias y publica reports/week-03 y evidence/week-03 como artefacto académico."
+    }
+  ]
+}

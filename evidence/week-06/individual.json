@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "week": 6,
+  "teamId": "DMI-10B-E03",
+  "members": [
+    {
+      "studentId": "a3523110227",
+      "commitShas": ["f77dff101a101b9d58908819a816e0822729a741"],
+      "files": ["App.tsx", "docs/session-state-machine.mmd", "course-tests/week-06-auth-integration.test.ts"],
+      "tests": ["npm test -- --ci --runInBand course-tests/week-06-auth-integration.test.ts", "npm run check:architecture"],
+      "reviews": [],
+      "prediction": "El backend debe rechazar accesos de reportantes y técnicos no asignados, mientras el coordinador puede consultar la incidencia.",
+      "command": "npm test -- --ci --runInBand course-tests/week-06-auth-integration.test.ts",
+      "observedResult": "2 suites RBAC pasaron; los accesos inválidos devolvieron 403 y el técnico asignado pudo iniciar la incidencia.",
+      "explanation": "Implementé la máquina de estados documentada, selector de actor, logout seguro y pruebas contra el backend local para demostrar que ocultar botones no sustituye RBAC del servidor."
+    }
+  ]
+}

@@ -1,10 +1,10 @@
-import { Incident } from '../domain/Incident';
-import { IncidentRepository } from '../domain/IncidentRepository';
+import type { Incident } from '../domain/Incident';
+import type { ClientResult } from '../domain/IncidentRepository';
 
 export class GetIncidentsUseCase {
-  constructor(private readonly repository: IncidentRepository) {}
+  constructor(private readonly repository: { list(): Promise<ClientResult<readonly Incident[]>> }) {}
 
-  async execute(): Promise<Incident[]> {
-    return this.repository.getAll();
+  async execute(): Promise<ClientResult<readonly Incident[]>> {
+    return this.repository.list();
   }
 }

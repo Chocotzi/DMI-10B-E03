@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "week": 6,
+  "commitSha": "f77dff101a101b9d58908819a816e0822729a741",
+  "decision": "Implementamos una política de single-flight para la renovación de tokens en coordinateRefresh. Ante respuestas 401 concurrentes, agrupamos las peticiones para emitir un solo refresh y reintentamos cada petición fallida exactamente 1 vez para evitar bucles infinitos. Ante una respuesta de fallback (fallo o logout), el estado retorna de manera segura a no autenticado (anonymous) eliminando el token persistido.",
+  "alternatives": [
+    "Reintentar infinitamente hasta obtener éxito: riesgoso por los bucles infinitos ante tokens revocados.",
+    "Emitir un refresh individual por cada solicitud concurrente: desperdicia red y causa conflictos con el servidor al invalidar tokens activos.",
+    "Single-flight con límite de reintentos y fallback a logout (elegida): garantiza consistencia y protege la sesión en caso de revocación, evitando redundancia."
+  ],
+  "tradeoff": "Aumenta ligeramente la complejidad del control de estado (isRefreshing y manejo de cola), pero a cambio evitamos solicitudes duplicadas de refresh, mitigamos riesgos de denegación de servicio accidental y resolvemos los errores 401 de forma controlada garantizando una limpieza segura en caso de error o cierre de sesión.",
+  "requirementIds": [
+    "AC-01",
+    "AC-02",
+    "AC-03",
+    "AC-04"
+  ],
+  "verification": [
+    {
+      "command": "npm test -- --ci --runInBand course-tests/week-06.test.ts",
+      "result": "4 pruebas pasaron exitosamente. La concurrencia agrupa múltiples 401 y el logout limpia la persistencia.",
+      "evidence": "course-tests/week-06.test.ts status authenticated and single call logic verified"
+    }
+  ]
+}

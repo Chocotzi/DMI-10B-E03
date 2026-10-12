@@ -11,16 +11,12 @@ type Props = {
 
 export const IncidentDetailScreen: React.FC<Props> = ({ incidentId, onBack, getIncidentDetailUseCase }) => {
   const [incident, setIncident] = useState<Incident | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
-    getIncidentDetailUseCase.execute(incidentId).then(data => {
-      if (mounted) {
-        setIncident(data);
-        setLoading(false);
-      }
-    });
+    getIncidentDetailUseCase.execute(incidentId).then(result => { if (!mounted) return; setLoading(false); if (result.kind === 'success') setIncident(result.value); else if (result.kind === 'empty') setMessage('La incidencia no tiene datos disponibles.'); else setMessage(result.code === 'timeout' ? 'Tiempo de espera agotado.' : result.code === 'server' ? 'Error del servidor (500).' : result.code === 'invalid_contract' ? 'Contrato inválido.' : 'No se pudo cargar la incidencia.'); });
     return () => { mounted = false; };
   }, [getIncidentDetailUseCase, incidentId]);
 
@@ -31,7 +27,7 @@ export const IncidentDetailScreen: React.FC<Props> = ({ incidentId, onBack, getI
   if (!incident) {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>Incidencia no encontrada.</Text>
+        <Text style={styles.errorText}>{message ?? 'Incidencia no encontrada.'}</Text>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <Text style={styles.backButtonText}>Volver</Text>
         </TouchableOpacity>

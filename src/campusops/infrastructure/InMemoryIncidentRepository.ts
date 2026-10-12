@@ -4,6 +4,7 @@ import { Incident } from '../domain/Incident';
 const fakeIncidents: Incident[] = [
   {
     id: 'INC-001',
+    version: 1,
     title: 'Fuga de agua en Laboratorio B',
     description: 'Se reporta una fuga constante debajo del lavabo principal del laboratorio B.',
     category: 'water',
@@ -19,6 +20,7 @@ const fakeIncidents: Incident[] = [
   },
   {
     id: 'INC-002',
+    version: 1,
     title: 'Falla eléctrica en Aula 302',
     description: 'Los enchufes de la pared norte no tienen corriente.',
     category: 'electrical',

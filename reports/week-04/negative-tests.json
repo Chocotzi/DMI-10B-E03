@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "week": 4,
+  "commitSha": "12d04c493f1acdebd978bef77abf8dded0f17f7a",
+  "generatedAt": "2026-09-29T04:15:05.8046295Z",
+  "checks": [
+    {
+      "id": "nested-list-redaction",
+      "status": "pass",
+      "scenarioType": "boundary",
+      "command": "npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/week-04-security.test.ts",
+      "evidence": "La prueba confirma que authorization, email y location se redactan dentro de objetos anidados y listas, y que la entrada original no cambia."
+    },
+    {
+      "id": "generic-error-path",
+      "status": "pass",
+      "scenarioType": "failure",
+      "command": "npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/week-04-security.test.ts",
+      "evidence": "El camino de error devuelve No fue posible completar la operación. y no expone el token ni las coordenadas ficticias incluidas en la excepción."
+    },
+    {
+      "id": "session-cleared",
+      "status": "pass",
+      "scenarioType": "failure",
+      "command": "npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/week-04-security.test.ts",
+      "evidence": "Después de clearSecureSession, getSecureSession devuelve null; el token no queda disponible mediante la sesión de la aplicación."
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "week": 2,
-  "commitSha": "1cfe8641a899ddfc674cb2f66aaeefacecf14cf8",
+  "commitSha": "3a4acb68298e3185f1b0d4fb421402bd167acdc7",
   "decision": "Al integrar dev-cleber (3388cd1) y fix/semana-02-arquitectura (6817fcc) en la rama integracion/semana-02-merge conservamos la correccion de limites basada en una raiz de composicion: App.tsx (lineas 10-13) es el unico modulo que instancia InMemoryIncidentRepository y construye GetIncidentsUseCase y GetIncidentDetailUseCase, y las pantallas de src/campusops/ui reciben los casos de uso por props (IncidentListScreen.tsx linea 8, IncidentDetailScreen.tsx linea 9). Descartamos reintroducir el singleton exportado por infraestructura importado desde la UI y descartamos, por ahora, un contenedor de inyeccion o React Context. Ademas la regla dejo de ser solo documental: npm run check:architecture (tools/check-architecture.mjs) se incorporo a la receta verify del Makefile (linea 12), de modo que make feedback y el workflow de semana 1 la ejecutan en cada push. Restricciones que guiaron la decision: facilidad de prueba sin backend, complejidad minima para un esqueleto de dos pantallas y costo bajo de sustituir el proveedor de datos (fake en memoria hoy, HttpIncidentRepository contra /v1/incidents en la semana 5).",
   "alternatives": [
     "Mantener el singleton incidentRepository exportado desde src/campusops/infrastructure e importado directamente por las pantallas (estado de 3388cd1): cero cableado y el esqueleto funciona, pero acopla la UI a un adaptador concreto, contradice el diagrama y obliga a usar jest.mock del modulo de infraestructura para probar una pantalla con un repositorio de prueba.",

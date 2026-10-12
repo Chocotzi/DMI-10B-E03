@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "week": 4,
+  "teamId": "DMI-10B-E03",
+  "members": [
+    {
+      "studentId": "a3523110609",
+      "commitShas": ["12d04c493f1acdebd978bef77abf8dded0f17f7a"],
+      "files": ["src/security/secureSession.ts", "course-tests/week-04-security.test.ts"],
+      "tests": ["npx tsc --noEmit", "npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/week-04-security.test.ts"],
+      "reviews": [],
+      "prediction": "La sesión en memoria debe quedar vacía después de clearSecureSession y los datos sensibles anidados deben aparecer como [REDACTED].",
+      "command": "npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/week-04-security.test.ts",
+      "observedResult": "Las pruebas de sesión, sanitización anidada y errores genéricos pasaron.",
+      "explanation": "Implementé el control de sesión no persistente y las pruebas negativas que comprueban limpieza, inmutabilidad y ausencia de secretos en errores."
+    },
+    {
+      "studentId": "a3523110227",
+      "commitShas": ["6817fccfdb40822e320be99528ae8669cadc5cbe"],
+      "files": ["src/security/redactForTelemetry.ts", "course-tests/public/week-04.test.ts"],
+      "tests": ["npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/public/week-04.test.ts"],
+      "reviews": ["Revisión del contrato de sanitización en docs/CAMPUSOPS_API.md"],
+      "prediction": "El adaptador público debe conservar incidentId y status, ocultar campos sensibles y aceptar estructuras anidadas.",
+      "command": "npx jest --no-watchman --cacheDirectory .jest-cache --ci --runInBand course-tests/public/week-04.test.ts",
+      "observedResult": "La prueba pública de sanitización terminó correctamente.",
+      "explanation": "Revisé la conexión del adaptador con redactForTelemetry y el contrato de campos sensibles y contexto técnico."
+    },
+    {
+      "studentId": "a3523110321",
+      "commitShas": ["3388cd1c4093c2b9433e52f5df8dae085a1d1c83"],
+      "files": ["docs/security-controls.md", "evidence/week-04/engineering.json"],
+      "tests": ["make verify-week-04", "make public-test-week-04"],
+      "reviews": ["Revisión de la decisión de almacenamiento y riesgo residual"],
+      "prediction": "La evidencia debe vincular la elección de almacenamiento con alternativas, trade-off y una prueba reproducible.",
+      "command": "make verify-week-04",
+      "observedResult": "La documentación vincula AC-01 a AC-05 con la decisión, sus costos y las comprobaciones disponibles.",
+      "explanation": "Documenté la decisión de no persistir tokens en este starter, la alternativa SecureStore y el riesgo residual de memoria durante la ejecución."
+    }
+  ]
+}

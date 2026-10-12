@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "week": 5,
+  "commitSha": "ded3b47d1c13a7169f02a2db44417414b8ed2626",
+  "generatedAt": "2026-10-04T22:52:35Z",
+  "checks": [
+    {
+      "id": "nullable",
+      "status": "pass",
+      "scenarioType": "boundary",
+      "command": "npm test -- --ci --runInBand course-tests/week-05-client.test.ts",
+      "expected": "payload null produce empty en detalle y unavailableIds en lista, sin entidad sintética.",
+      "observed": "PASS: detalle devolvió {kind: empty, reason: null_payload}; lista conservó un registro válido y enumeró el ID sin payload.",
+      "evidence": "Casos 'null payload is empty' y 'list keeps valid records separate from nullable records'; variante real nullable en course-tests/week-05-backend-integration.test.ts."
+    },
+    {
+      "id": "malformed",
+      "status": "pass",
+      "scenarioType": "failure",
+      "command": "npm test -- --ci --runInBand course-tests/week-05-client.test.ts",
+      "expected": "Payload incompleto, estado desconocido y JSON ilegible se distinguen de ausencia válida.",
+      "observed": "PASS: los tres casos devolvieron error invalid_contract; ninguna excepción llegó al llamador.",
+      "evidence": "Caso 'null payload is empty; malformed domain or envelope is invalid'; variante real malformed en course-tests/week-05-backend-integration.test.ts."
+    },
+    {
+      "id": "slow-timeout",
+      "status": "pass",
+      "scenarioType": "failure",
+      "command": "npm test -- --ci --runInBand course-tests/week-05-client.test.ts",
+      "expected": "Una solicitud que no responde se cancela al plazo configurado y retorna timeout.",
+      "observed": "PASS: una promesa sin respuesta con timeoutMs=20 devolvió {kind: error, code: timeout}.",
+      "evidence": "Caso 'timeout, server error and network error remain distinct results'; variante real slow en course-tests/week-05-backend-integration.test.ts."
+    },
+    {
+      "id": "server-error-y-red",
+      "status": "pass",
+      "scenarioType": "failure",
+      "command": "npm test -- --ci --runInBand course-tests/week-05-client.test.ts",
+      "expected": "HTTP 500, HTTP 429 y fallo de red dan resultados distinguibles, sin registrar el cuerpo de respuesta.",
+      "observed": "PASS: server/500, http/429 y network respectivamente; el cliente no usa console ni telemetría con datos libres.",
+      "evidence": "Caso 'timeout, server error and network error remain distinct results'; variante real server_error en course-tests/week-05-backend-integration.test.ts."
+    },
+    {
+      "id": "variantes-http-reales",
+      "status": "pass",
+      "scenarioType": "failure",
+      "command": "npm test -- --ci --runInBand course-tests/week-05-backend-integration.test.ts",
+      "expected": "malformed -> invalid_contract, slow con 50 ms -> timeout, server_error -> server/500.",
+      "observed": "PASS: el cliente observó los tres códigos esperados ante el backend local; 1 prueba de integración aprobada.",
+      "evidence": "course-tests/week-05-backend-integration.test.ts; X-Course-Scenario en cada solicitud."
+    }
+  ]
+}

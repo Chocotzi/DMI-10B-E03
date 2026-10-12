@@ -4,6 +4,17 @@
   "teamId": "DMI-10B-E03",
   "members": [
     {
+      "studentId": "a3523110321",
+      "commitShas": ["786e13e4a75222b5368ef4eaa71bcc3c6c8fcb5"],
+      "files": ["src/course-evaluation/index.ts", "reports/week-06/concurrency.json", "evidence/week-06/engineering.json"],
+      "tests": ["npm test -- --ci --runInBand course-tests/week-06.test.ts"],
+      "reviews": [],
+      "prediction": "Las solicitudes concurrentes que reciban 401 deben compartir una sola renovación y reintentarse una sola vez.",
+      "command": "npm test -- --ci --runInBand course-tests/week-06.test.ts",
+      "observedResult": "La implementación de coordinateRefresh pasó las pruebas de renovación compartida, reintento limitado y limpieza después del fallo.",
+      "explanation": "Contribución existente de Cleber identificada en el historial de Git; implementó la coordinación single-flight de refresh y dejó su evidencia técnica."
+    },
+    {
       "studentId": "a3523110227",
       "commitShas": ["6a6adfb9f48de5067f0225e2b8404686c69ed6e2"],
       "files": ["App.tsx", "docs/session-state-machine.mmd", "course-tests/week-06-auth-integration.test.ts"],
@@ -13,6 +24,17 @@
       "command": "npm test -- --ci --runInBand course-tests/week-06-auth-integration.test.ts",
       "observedResult": "La suite de integración RBAC pasó con 3 pruebas; los accesos inválidos devolvieron 403, el técnico asignado inició y resolvió, y el coordinador asignó, priorizó, cerró y reabrió.",
       "explanation": "Implementé la máquina de estados documentada, selector de actor, logout seguro y pruebas contra el backend local para demostrar que ocultar botones no sustituye RBAC del servidor."
+    },
+    {
+      "studentId": "a3523110609",
+      "commitShas": [],
+      "files": [],
+      "tests": [],
+      "reviews": [],
+      "prediction": "No se encontró en el historial de dev-cleber una contribución identificable de Chocotzi para Semana 6.",
+      "command": "git log --all --author=chocotzi --oneline",
+      "observedResult": "No hay commit de Chocotzi relacionado con Semana 6 en la rama revisada.",
+      "explanation": "Integrante incluido para cumplir el registro del equipo, pero se deja pendiente su SHA, archivos y prueba reales en lugar de atribuirle cambios no verificables."
     }
   ]
 }

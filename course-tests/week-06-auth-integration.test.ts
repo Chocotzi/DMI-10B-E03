@@ -41,3 +41,17 @@ test('server enforces coordinator and technician actions', async () => {
   const technician = await call('technician-1', '/v1/incidents/campus-inc-001/actions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': 'auth-test-002' }, body: JSON.stringify({ action: 'start', baseVersion: 1 }) });
   expect(technician.status).toBe(201);
 });
+
+test('coordinator can assign, prioritize, close and reopen', async () => {
+  const action = (key: string, body: object, actorId = 'coordinator-1') => call(actorId, '/v1/incidents/campus-inc-001/actions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key },
+    body: JSON.stringify(body),
+  });
+  expect((await action('auth-test-assign', { action: 'assign', baseVersion: 2, technicianId: 'technician-2' })).status).toBe(201);
+  expect((await action('auth-test-prioritize', { action: 'prioritize', baseVersion: 3, priority: 'high' })).status).toBe(201);
+  expect((await action('auth-test-start', { action: 'start', baseVersion: 4 }, 'technician-2')).status).toBe(201);
+  expect((await action('auth-test-resolve', { action: 'resolve', baseVersion: 5, diagnosis: 'Falla ficticia resuelta' }, 'technician-2')).status).toBe(201);
+  expect((await action('auth-test-close', { action: 'close', baseVersion: 6 })).status).toBe(201);
+  expect((await action('auth-test-reopen', { action: 'reopen', baseVersion: 7 })).status).toBe(201);
+});

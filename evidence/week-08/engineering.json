@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "week": 8,
+  "commitSha": "44ed461e960266fbf972cd7b76b6b98dfad25c33",
+  "decision": "Implementamos una política determinista de 3-way merge en resolveSync y deduplicación por operationId en deduplicateOperations. La sincronización evalúa las diferencias por contenido JSON profundo entre base, local y remoto: los cambios independientes se combinan limpiamente; cuando existe una modificación concurrente sobre el mismo campo a valores distintos (ejemplo: inicio offline en local frente a reasignación remota en el campo work), se declara formalmente el conflicto con los campos ordenados alfabéticamente sin mutar los registros de entrada ni descartar la cola de operaciones. deduplicateOperations garantiza la idempotencia en reintentos preservando la primera aparición sin mutar las entradas.",
+  "alternatives": [
+    "Last-Write-Wins (LWW) basado en timestamp del cliente: descarta silenciosamente cambios offline si el reloj del dispositivo difiere o ante reasignaciones remotas concurrentes, causando pérdida de datos e inconsistencia en auditorías.",
+    "Bloqueo pesimista o rechazo total ante cualquier cambio remoto: impediría el trabajo sin conexión y forzaría al técnico a descartar todo su progreso local aunque haya modificado campos totalmente ortogonales a los del coordinador.",
+    "3-way merge con detección de conflictos a nivel de campo e idempotencia por operationId (elegida): preserva la integridad de datos, combina cambios independientes sin pérdida y retiene la intención local en cola ante conflictos para resolución supervisada."
+  ],
+  "tradeoff": "Aumenta la sobrecarga de procesamiento debido a la recursión en la comparación profunda de objetos y arreglos JSON, y requiere que la aplicación gestione explícitamente los estados de conflicto detectados, pero a cambio elimina por completo la sobrescritura destructiva, protege la evidencia capturada sin conexión y asegura una integración idempotente y verificable.",
+  "requirementIds": [
+    "AC-01",
+    "AC-02",
+    "AC-03",
+    "AC-04",
+    "AC-05"
+  ],
+  "verification": [
+    {
+      "command": "npm test -- --ci --runInBand course-tests/week-08.test.ts course-tests/public/week-08.test.ts",
+      "result": "12 pruebas pasaron satisfactoriamente verificando 3-way merge, orden alfabético de conflictos, inmutabilidad de registros y deduplicación estable.",
+      "evidence": "course-tests/week-08.test.ts y course-tests/public/week-08.test.ts ejecutaron 12 tests en verde sin mutar los objetos de entrada."
+    }
+  ]
+}

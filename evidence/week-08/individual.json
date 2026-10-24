@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "week": 8,
+  "teamId": "DMI-10B-E03",
+  "members": [
+    {
+      "studentId": "a3523110321",
+      "commitShas": [
+        "44ed461e960266fbf972cd7b76b6b98dfad25c33"
+      ],
+      "files": [
+        "src/course-evaluation/index.ts",
+        "course-tests/week-08.test.ts",
+        "evidence/week-08/engineering.json"
+      ],
+      "tests": [
+        "npm test -- --ci --runInBand course-tests/week-08.test.ts course-tests/public/week-08.test.ts"
+      ],
+      "reviews": [],
+      "prediction": "resolveSync combinará cambios de campos independientes, reportará conflicto al detectar modificaciones concurrentes sobre el mismo campo como work ordenándolos alfabéticamente, y deduplicateOperations mantendrá la primera operación por operationId sin mutar entradas.",
+      "command": "npm test -- --ci --runInBand course-tests/week-08.test.ts course-tests/public/week-08.test.ts",
+      "observedResult": "Las 12 pruebas de las suites pública y unitaria pasaron exitosamente comprobando 3-way merge, orden alfabético de conflictos, inmutabilidad y deduplicación.",
+      "explanation": "Implementé los adaptadores de sincronización resolveSync y deduplicateOperations en index.ts con comparación JSON profunda, desarrollé la suite de pruebas unitarias y documenté la justificación de ingeniería."
+    },
+    {
+      "studentId": "a3523110227",
+      "commitShas": [
+        "2f06597691123b1da62d3c2e2c76322a69d2bfd3"
+      ],
+      "files": [
+        "docs/data-model.md"
+      ],
+      "tests": [
+        "npm test -- --ci --runInBand course-tests/smoke.test.tsx"
+      ],
+      "reviews": [],
+      "prediction": "El modelo de datos y la cola persistente conservarán notas y evidencias tras cerrar y reiniciar la aplicación.",
+      "command": "npm run check:architecture",
+      "observedResult": "Estructura arquitectónica verificada para la persistencia local de la cola según el plan de Semana 08.",
+      "explanation": "Asignación planificada para diseño del modelo de datos y persistencia de cola offline del integrante 2."
+    },
+    {
+      "studentId": "a3523110609",
+      "commitShas": [
+        "2f06597691123b1da62d3c2e2c76322a69d2bfd3"
+      ],
+      "files": [
+        "docs/sync-policy.md",
+        "reports/week-08/migration-tests.json"
+      ],
+      "tests": [
+        "npm test -- --ci --runInBand course-tests/smoke.test.tsx"
+      ],
+      "reviews": [],
+      "prediction": "La política de sincronización y las pruebas de migración con rollback demostrarán recuperación segura ante fallas.",
+      "command": "npm run check:architecture",
+      "observedResult": "Arquitectura y contratos de migración preparados para la implementación del integrante 3.",
+      "explanation": "Asignación planificada para política de sincronización y pruebas de rollback de migración del integrante 3."
+    }
+  ]
+}

@@ -25,19 +25,26 @@
     {
       "studentId": "a3523110227",
       "commitShas": [
-        "2f06597691123b1da62d3c2e2c76322a69d2bfd3"
+        "5cf01aeed2dd73a65f85bcaeddad0501b313bdc8"
       ],
       "files": [
-        "docs/data-model.md"
+        "docs/data-model.md",
+        "src/campusops/contracts.ts",
+        "src/campusops/domain/OperationQueueRepository.ts",
+        "src/campusops/infrastructure/PersistentOperationQueueRepository.ts",
+        "course-tests/week-08-offline-queue.test.ts"
       ],
       "tests": [
-        "npm test -- --ci --runInBand course-tests/smoke.test.tsx"
+        "npm test -- --ci --runInBand course-tests/week-08-offline-queue.test.ts",
+        "npm run typecheck",
+        "npm run lint",
+        "npm run check:architecture"
       ],
       "reviews": [],
-      "prediction": "El modelo de datos y la cola persistente conservarán notas y evidencias tras cerrar y reiniciar la aplicación.",
-      "command": "npm run check:architecture",
-      "observedResult": "Estructura arquitectónica verificada para la persistencia local de la cola según el plan de Semana 08.",
-      "explanation": "Asignación planificada para diseño del modelo de datos y persistencia de cola offline del integrante 2."
+      "prediction": "Si la cola de operaciones se escribe a través de un storage persistente y cada cambio se vuelca de inmediato (nunca sólo en memoria), entonces crear una nueva instancia del repositorio sobre el mismo storage, simulando reiniciar la app, debe recuperar la misma identidad (operationId) y el mismo contenido de la operación encolada por el técnico sin conexión; y una operación en conflicto debe permanecer en la cola hasta que una confirmación explícita del backend la retire.",
+      "command": "npm test -- --ci --runInBand course-tests/week-08-offline-queue.test.ts",
+      "observedResult": "Las 6 pruebas de course-tests/week-08-offline-queue.test.ts pasaron: (1) la operación encolada sin conexión conserva operationId y contenido tras crear una nueva instancia del repositorio sobre el mismo storage; (2) una referencia de fotografía pendiente (evidenceId) se conserva como recurso no subido; (3) markConflict conserva la entrada en la cola con sus campos intactos y sólo markConfirmed la retira; (4) un reintento con el mismo operationId no duplica la entrada (usa deduplicateOperations); (5) la clave de almacenamiento usada es la v1 declarada en docs/data-model.md; (6) sin un storage inyectado y sin el paquete nativo instalado, el adaptador lanza un error explícito en vez de fallar en silencio. Adicionalmente, npm run typecheck, npm run lint y npm run check:architecture terminaron sin errores ni advertencias sobre estos archivos.",
+      "explanation": "Diseñé y documenté el modelo de datos de la cola offline (docs/data-model.md: entidades, elección de @react-native-async-storage/async-storage sobre expo-sqlite, versión de esquema v1 y estructura formal de la cola). Implementé el puerto OperationQueueRepository y su adaptador persistente PersistentOperationQueueRepository, que reutiliza deduplicateOperations (ya implementado por el equipo) para encolar de forma idempotente y que sólo permite retirar una operación de la cola mediante markConfirmed, nunca ante un conflicto o una falla de red. Agregué el tipo QueuedOperation en src/campusops/contracts.ts. Escribí y corrí course-tests/week-08-offline-queue.test.ts, que demuestra el caso obligatorio 'Reinicio sin conexión' creando una segunda instancia del repositorio sobre el mismo almacenamiento simulado, sin estado compartido en memoria entre ambas instancias."
     },
     {
       "studentId": "a3523110609",

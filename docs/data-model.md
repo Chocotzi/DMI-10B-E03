@@ -39,11 +39,7 @@ Una referencia a fotografía pendiente (`evidenceId`) se guarda como un campo m�
 
 El puerto de dominio (`OperationQueueRepository`, §3) **no depende de AsyncStorage**: depende de una interfaz mínima `KeyValueStorage { getItem, setItem }`. Esto permite swap a `expo-sqlite` (o a cualquier otro motor) sin tocar la lógica de cola, y permite probar la persistencia en Jest sin instalar dependencias nativas (ver `course-tests/week-08-offline-queue.test.ts`).
 
-> **Limitación conocida y declarada:** el entorno de desarrollo actual del equipo no tiene salida de red hacia el registro de npm al momento de escribir este documento, por lo que `@react-native-async-storage/async-storage` **no se agregó todavía a `package.json`/`package-lock.json`**. El adaptador (`PersistentOperationQueueRepository`) ya está escrito contra la interfaz real de ese paquete (`getItem`/`setItem`) y funciona de inmediato en cuanto alguien del equipo con acceso al registro ejecute:
-> ```bash
-> npm install @react-native-async-storage/async-storage
-> ```
-> y confirme `npm run typecheck` y `make feedback` en verde. Mientras tanto, si se intenta usar el adaptador por defecto (sin inyectar un `storage`) sin el paquete instalado, lanza un error explícito indicando el comando a ejecutar — nunca falla en silencio ni simula persistencia que no existe.
+> **Dependencia instalada (actualización en la rama `dev-carlos`):** `@react-native-async-storage/async-storage` quedó agregado a `package.json`/`package-lock.json` con la versión `2.2.0`, la que Expo SDK 57 declara compatible (`node_modules/expo/bundledNativeModules.json`; `npx expo install` elige la misma). El adaptador sigue resolviendo el módulo de forma diferida: en Jest no existe el módulo nativo y, sin un `storage` inyectado, lanza un error explícito; nunca falla en silencio ni simula persistencia que no existe. La migración (§4) usa además `removeItem`, que AsyncStorage también implementa (`MigratableStorage`).
 
 ## 3. Estructura formal de la cola (puerto de dominio)
 
@@ -61,23 +57,75 @@ export interface OperationQueueRepository {
 Regla de desalojo (implementada en `PersistentOperationQueueRepository`):
 
 - `enqueue` agrega una operación nueva y aplica `deduplicateOperations` (la misma función pura del contrato de la Semana 8, no una reimplementación) para que reintentar con el mismo `operationId` antes de confirmarse no duplique la entrada en la cola.
-- `markConfirmed(operationId)` es la **única** operación que elimina una entrada de la cola persistida. Se invoca sólo tras una respuesta exitosa y no duplicada del backend.
+- `markConfirmed(operationId)` es la **única** operación que elimina una entrada de la cola persistida. Se invoca sólo tras una respuesta que confirme que el efecto quedó aplicado una sola vez (`201`, o `200` con `duplicate: true`; ver `docs/sync-policy.md` §7).
 - `markConflict(operationId)` actualiza el `status` a `conflict` **sin eliminar la entrada** y sin mutar el resto de sus campos (`incidentId`, `actorId`, `payload`, etc. permanecen intactos para que la persona pueda resolver el conflicto más tarde).
 - No existe ningún método que borre la cola completa ante un error de red o un conflicto; esa posibilidad se eliminó intencionalmente de la interfaz para que ningún llamador pueda "limpiar todo" por accidente.
 
-## 4. Versión de esquema y migración (alcance de este documento)
+## 4. Versión de esquema, migración y recuperación
 
-El almacenamiento persistente de la cola se guarda bajo la clave `campusops.offlineQueue.v1`. El sufijo `v1` es la versión de esquema actual de la cola:
+> Implementación y pruebas de este apartado: integrante `a3523110609` (`src/campusops/infrastructure/OfflineStoreMigration.ts`, `course-tests/week-08-migration.test.ts`). Se respetan los nombres de clave y la regla «escribir v2 en una clave nueva y borrar v1 sólo después de comprobar v2» que fijaba la primera versión de este documento.
 
-- **v1** (actual): arreglo plano de `QueuedOperation` tal como se define en §1.
+### 4.1 Esquemas
 
-Cuando el esquema de la cola o de las incidencias cacheadas cambie (por ejemplo, si una semana futura necesita separar `payload.evidenceId` en una tabla propia de adjuntos), corresponde:
+| Versión | Claves | Contenido |
+|---|---|---|
+| v1 | `campusops.offlineQueue.v1`, `campusops.incidents.v1`; sin puntero de versión (ausente = v1) | Cola: arreglo plano de `QueuedOperation` (§1), escrito por `PersistentOperationQueueRepository`. Caché: arreglo de `Incident` (entidad de §1). La primera versión de este documento ya contemplaba las «incidencias cacheadas», pero en `dev-benkis` ningún adaptador las escribía; por eso la migración trata la clave ausente como caché vacía. |
+| v2 (actual) | `campusops.schemaVersion` = `"2"`, `campusops.offlineQueue.v2`, `campusops.incidents.v2` | Cola: cada entrada v1 sin cambios, más `base: { version, fields } \| null`, la instantánea de la incidencia al capturar la intención. Caché: objeto `{ [incidentId]: Incident }`. |
 
-1. Introducir una clave nueva (`campusops.offlineQueue.v2`) en vez de sobrescribir la v1 in-place.
-2. Leer v1, transformar en memoria al formato v2, y escribir v2 en una operación atómica (ver siguiente punto) **antes** de borrar la clave v1.
-3. Sólo borrar la clave v1 después de confirmar que la lectura de v2 es consistente.
+**Por qué existe v2.** Con v1, después de reiniciar sólo se conoce `baseVersion`. Así no se puede distinguir un cambio remoto independiente de uno incompatible, que es lo que decide `resolveSync` (ver `docs/sync-policy.md` §3). Indexar la caché por `id` evita incidencias repetidas.
 
-La implementación del *runner* de migraciones, la inyección de una falla a mitad de camino y el rollback/recuperación verificable (caso "Migración válida y fallida" de la tabla del enunciado) son responsabilidad de la persona del equipo encargada de `docs/sync-policy.md` y `reports/week-08/migration-tests.json`; este documento fija el contrato de datos y de nombres de clave que esa migración debe respetar para no romper la cola descrita aquí.
+### 4.2 Transformación v1 → v2
+
+`transformV1ToV2` es pura y no muta sus entradas.
+
+- **Qué se conserva.** Cada operación conserva `operationId`, `incidentId`, `baseVersion`, `actorId`, `action`, `payload` (incluidas notas y referencias `evidenceId`), `status` y `createdAt`, en el mismo orden.
+- **Cómo se obtiene `base`.**
+  - Se deriva de la caché v1 sólo si la incidencia cacheada tiene `version === baseVersion` (`fields: { work }`).
+  - Si no coincide, queda en `null`: la base es desconocida y, ante un `409`, la entrada pasa a conflicto para revisión en vez de combinarse a ciegas.
+  - Una entrada que ya traía una `base` válida (capturada mientras la app trabajaba en v1 después de un rollback) la conserva.
+- **Duplicados.** Las operaciones repetidas por `operationId` se resuelven con `deduplicateOperations` (se conserva la primera). Las incidencias repetidas, con la de mayor versión.
+- **Datos ilegibles.** Si los datos v1 son ilegibles o no cumplen el esquema, no se migra ni se borra nada (`blocked`), y `openOfflineStore` no entrega una cola que pudiera sobrescribirlos.
+
+### 4.3 Procedimiento atómico
+
+AsyncStorage no tiene transacciones entre claves. La atomicidad se obtiene con claves sombra y un único punto de commit.
+
+1. **Leer el puntero.** Si vale `"2"`, el almacén ya está al día y sólo se limpian claves v1 sobrantes. Si tiene una versión desconocida, el resultado es `blocked` y no se toca nada.
+2. **Recuperar.** Las claves v2 que existan sin el puntero `"2"` son restos de una ejecución interrumpida que nunca se confirmó; se borran antes de migrar.
+3. **Leer y validar v1** y transformarlo en memoria.
+4. **Escribir v2** en las claves nuevas (sombra). Las claves v1 no se modifican.
+5. **Releer** cada clave v2 y compararla, cadena contra cadena, con lo escrito.
+6. **Commit.** Una sola escritura: `campusops.schemaVersion = "2"`. Es el único momento en que v2 pasa a ser el esquema activo.
+7. **Limpiar.** Sólo después del commit se borran las claves v1. Si esa limpieza falla, no hay riesgo: el puntero ya indica v2 y la limpieza se repite al siguiente inicio.
+
+**Rollback.** Cualquier error en los pasos 4 a 6 borra las claves sombra. El puntero sigue sin cambiar y v1 queda idéntico, byte a byte. Si el error ocurrió al escribir el puntero, primero se relee:
+- si la escritura sí llegó, v2 es válido y se conserva;
+- si no se puede comprobar, el resultado es `blocked` y se decide en el siguiente inicio.
+
+**Lectura.** `openOfflineStore` elige las claves según el puntero, de modo que una clave sombra sin confirmar nunca se lee. Nunca queda activo un estado mitad v1 y mitad v2.
+
+### 4.4 Arranque (`openOfflineStore`)
+
+| Resultado de la migración | Qué hace la app |
+|---|---|
+| `migrated`, `already_current` o `fresh_install` | Usa la cola sobre `campusops.offlineQueue.v2`. |
+| `rolled_back` | Usa la cola sobre la v1 intacta: la app sigue funcionando y la migración se reintenta en el siguiente inicio. |
+| `blocked` | Lanza `OfflineStoreUnavailableError` sin modificar datos. |
+
+El almacenamiento por defecto es AsyncStorage, resuelto de forma diferida; también se puede inyectar un `MigratableStorage` (`getItem`/`setItem`/`removeItem`). `App.tsx` todavía no compone este arranque; se conecta junto con la interfaz sin conexión (semana 10).
+
+### 4.5 Fallas inyectadas y estados observados
+
+Comando: `npm test -- --ci --runInBand course-tests/week-08-migration.test.ts`. Los estados (antes, después de la falla y después de recuperar) se generan con `npm run trace:week-08` en `reports/week-08/generated-migration-trace.json`, archivo ignorado por Git. El índice está en `reports/week-08/migration-tests.json`.
+
+| Falla inyectada | Después de la falla | Después de recuperar |
+|---|---|---|
+| `setItem(campusops.incidents.v2)` lanza error | `rolled_back` en `write_incidents_v2`; bytes idénticos a antes; la app sigue en v1 | El siguiente inicio migra: 4 operaciones v1 más la capturada entretanto, y 2 incidencias |
+| El proceso muere justo después de escribir `campusops.offlineQueue.v2` | Puntero ausente, v1 intacto; queda sólo la clave sombra huérfana, que no se lee | Se borra la sombra (`recoveredLeftovers`) y se migra |
+| Falla la escritura del puntero (commit) | `rolled_back` en `commit`; bytes idénticos | — |
+| La escritura del puntero llega pero reporta error | `migrated` con `commitConfirmedAfterError: true`; v2 se conserva | — |
+| Escritura v2 truncada en silencio | La relectura la detecta: `rolled_back` en `verify_v2`; bytes idénticos | — |
+| JSON v1 ilegible o versión de esquema `"3"` | `blocked`; no se modifica ni se entrega cola | — |
 
 ## 5. Cómo se demuestra "reinicio sin conexión"
 

@@ -49,20 +49,38 @@
     {
       "studentId": "a3523110609",
       "commitShas": [
-        "2f06597691123b1da62d3c2e2c76322a69d2bfd3"
+        "b012cfc2d9d8498fb532d8c8ee01a688d5739227"
       ],
       "files": [
+        "src/campusops/infrastructure/OfflineStoreMigration.ts",
+        "src/campusops/domain/OfflineSync.ts",
+        "src/campusops/application/SyncPendingOperationsUseCase.ts",
+        "src/campusops/domain/IncidentSyncGateway.ts",
+        "src/campusops/infrastructure/HttpIncidentSyncGateway.ts",
+        "course-tests/week-08-migration.test.ts",
+        "course-tests/week-08-sync-integration.test.ts",
+        "course-tests/week-08-sync-policy.test.ts",
+        "tools/week-08-trace.mjs",
         "docs/sync-policy.md",
-        "reports/week-08/migration-tests.json"
+        "docs/data-model.md",
+        "reports/week-08/migration-tests.json",
+        "evidence/week-08/individual.json"
       ],
       "tests": [
-        "npm test -- --ci --runInBand course-tests/smoke.test.tsx"
+        "npm test -- --ci --runInBand course-tests/week-08-migration.test.ts",
+        "npm test -- --ci --runInBand course-tests/week-08-sync-integration.test.ts course-tests/week-08-sync-policy.test.ts",
+        "npm run trace:week-08",
+        "make verify-week-08",
+        "make public-test-week-08"
       ],
-      "reviews": [],
-      "prediction": "La política de sincronización y las pruebas de migración con rollback demostrarán recuperación segura ante fallas.",
-      "command": "npm run check:architecture",
-      "observedResult": "Arquitectura y contratos de migración preparados para la implementación del integrante 3.",
-      "explanation": "Asignación planificada para política de sincronización y pruebas de rollback de migración del integrante 3."
+      "reviews": [
+        "Revisión de integración de dev-cleber y dev-benkis con el evaluador de semana 8 sobre c17bb0c9ea33f40c69da802a508fe1b4d3269723: fallaba npm run audit:ci (shell-quote 1.10.0 crítico), faltaban docs/sync-policy.md y reports/week-08/migration-tests.json y engineering.json tenía un commitSha obsoleto; se corrigió en dev-carlos (override shell-quote 1.12.0, AsyncStorage 2.2.0, archivos y SHA).",
+        "Pruebas de mutación: hacer que el rollback no borre las claves sombra, confirmar ante un timeout, descartar ante un 403 o confirmar sin relectura hace fallar las pruebas correspondientes; el código se restauró antes de confirmar."
+      ],
+      "prediction": "Si la migración v1→v2 escribe en claves sombra y sólo confirma con una única escritura del puntero campusops.schemaVersion, entonces una falla inyectada antes del commit deja v1 idéntico byte a byte y sin esquema mezclado, y el siguiente inicio completa la migración conservando las 4 operaciones y las 2 incidencias; y si la sincronización sólo retira lo confirmado, la reasignación remota produce un conflicto que conserva la intención local y la asignación de technician-2, mientras que el reintento tras una respuesta perdida no duplica el efecto.",
+      "command": "npm test -- --ci --runInBand course-tests/week-08-migration.test.ts course-tests/week-08-sync-integration.test.ts course-tests/week-08-sync-policy.test.ts",
+      "observedResult": "20 pruebas pasaron (7 de migración, 5 de integración con el backend y 8 de política). Falla en write_incidents_v2 → rolled_back con bytes idénticos; proceso detenido tras escribir la cola v2 → la recuperación borró [\"campusops.offlineQueue.v2\"] y migró 4 operaciones y 2 incidencias; reasignación → forbidden, cola [\"op-reasig-start-01:conflict\", \"op-reasig-note-02:queued\", \"op-reasig-photo-03:queued\"], remoto v3 asignado a technician-2 y reviewConflict = {\"kind\": \"conflict\", \"fields\": [\"work\"]}; respuesta perdida → timeout con la operación en cola y luego replayed_duplicate con una sola entrada en el historial. make verify-week-08 y make public-test-week-08 en status pass sobre b012cfc2d9d8498fb532d8c8ee01a688d5739227.",
+      "explanation": "Implementé la migración transaccional v1→v2 (claves sombra, relectura, commit por puntero, rollback y recuperación al reiniciar) y la sincronización que conecta la cola persistente de Benkis y resolveSync/deduplicateOperations de Cleber con el backend real (403 y conflicto del mismo campo se conservan para resolución, cambios independientes se combinan y se reenvían con identidad derivada, sólo se retira lo confirmado); escribí las pruebas con fallas inyectadas, el script de trazas, docs/sync-policy.md, el §4 de docs/data-model.md y este reporte, e integré las ramas del equipo corrigiendo el audit crítico. Asistencia de IA declarada: Claude (Anthropic) redactó código y documentos bajo mi dirección; lo verifiqué corriendo las suites de Jest en mi equipo Windows, y el evaluador del curso (make verify/public-test) se ejecutó en Linux limpio sobre el mismo SHA porque en Windows Python no encuentra npm ([WinError 2]). El commit b012cfc2d9d8498fb532d8c8ee01a688d5739227 contiene toda esta aportación (código, pruebas, documentos y dependencias), aunque su mensaje sólo menciona las dependencias."
     }
   ]
 }

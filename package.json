@@ -12,6 +12,7 @@
     "ios": "expo run:ios",
     "backend": "node course-backend/server.mjs",
     "backend:self-test": "node course-backend/self-test.mjs",
+    "trace:week-08": "node tools/week-08-trace.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "check:architecture": "node tools/check-architecture.mjs",
@@ -26,6 +27,7 @@
     "package:android": "npm run native:generate && ./android/gradlew -p android assembleRelease"
   },
   "dependencies": {
+    "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~57.0.9",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
@@ -64,6 +66,7 @@
       "metro": "0.84.5",
       "metro-config": "0.84.5",
       "metro-core": "0.84.5"
-    }
+    },
+    "shell-quote": "1.12.0"
   }
 }

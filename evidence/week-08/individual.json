@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "week": 8,
+  "teamId": "DMI-10B-E03",
+  "members": [
+    {
+      "studentId": "a3523110321",
+      "commitShas": [
+        "44ed461e960266fbf972cd7b76b6b98dfad25c33"
+      ],
+      "files": [
+        "src/course-evaluation/index.ts",
+        "course-tests/week-08.test.ts",
+        "evidence/week-08/engineering.json"
+      ],
+      "tests": [
+        "npm test -- --ci --runInBand course-tests/week-08.test.ts course-tests/public/week-08.test.ts"
+      ],
+      "reviews": [],
+      "prediction": "resolveSync combinará cambios de campos independientes, reportará conflicto al detectar modificaciones concurrentes sobre el mismo campo como work ordenándolos alfabéticamente, y deduplicateOperations mantendrá la primera operación por operationId sin mutar entradas.",
+      "command": "npm test -- --ci --runInBand course-tests/week-08.test.ts course-tests/public/week-08.test.ts",
+      "observedResult": "Las 12 pruebas de las suites pública y unitaria pasaron exitosamente comprobando 3-way merge, orden alfabético de conflictos, inmutabilidad y deduplicación.",
+      "explanation": "Implementé los adaptadores de sincronización resolveSync y deduplicateOperations en index.ts con comparación JSON profunda, desarrollé la suite de pruebas unitarias y documenté la justificación de ingeniería."
+    },
+    {
+      "studentId": "a3523110227",
+      "commitShas": [
+        "5cf01aeed2dd73a65f85bcaeddad0501b313bdc8"
+      ],
+      "files": [
+        "docs/data-model.md",
+        "src/campusops/contracts.ts",
+        "src/campusops/domain/OperationQueueRepository.ts",
+        "src/campusops/infrastructure/PersistentOperationQueueRepository.ts",
+        "course-tests/week-08-offline-queue.test.ts"
+      ],
+      "tests": [
+        "npm test -- --ci --runInBand course-tests/week-08-offline-queue.test.ts",
+        "npm run typecheck",
+        "npm run lint",
+        "npm run check:architecture"
+      ],
+      "reviews": [],
+      "prediction": "Si la cola de operaciones se escribe a través de un storage persistente y cada cambio se vuelca de inmediato (nunca sólo en memoria), entonces crear una nueva instancia del repositorio sobre el mismo storage, simulando reiniciar la app, debe recuperar la misma identidad (operationId) y el mismo contenido de la operación encolada por el técnico sin conexión; y una operación en conflicto debe permanecer en la cola hasta que una confirmación explícita del backend la retire.",
+      "command": "npm test -- --ci --runInBand course-tests/week-08-offline-queue.test.ts",
+      "observedResult": "Las 6 pruebas de course-tests/week-08-offline-queue.test.ts pasaron: (1) la operación encolada sin conexión conserva operationId y contenido tras crear una nueva instancia del repositorio sobre el mismo storage; (2) una referencia de fotografía pendiente (evidenceId) se conserva como recurso no subido; (3) markConflict conserva la entrada en la cola con sus campos intactos y sólo markConfirmed la retira; (4) un reintento con el mismo operationId no duplica la entrada (usa deduplicateOperations); (5) la clave de almacenamiento usada es la v1 declarada en docs/data-model.md; (6) sin un storage inyectado y sin el paquete nativo instalado, el adaptador lanza un error explícito en vez de fallar en silencio. Adicionalmente, npm run typecheck, npm run lint y npm run check:architecture terminaron sin errores ni advertencias sobre estos archivos.",
+      "explanation": "Diseñé y documenté el modelo de datos de la cola offline (docs/data-model.md: entidades, elección de @react-native-async-storage/async-storage sobre expo-sqlite, versión de esquema v1 y estructura formal de la cola). Implementé el puerto OperationQueueRepository y su adaptador persistente PersistentOperationQueueRepository, que reutiliza deduplicateOperations (ya implementado por el equipo) para encolar de forma idempotente y que sólo permite retirar una operación de la cola mediante markConfirmed, nunca ante un conflicto o una falla de red. Agregué el tipo QueuedOperation en src/campusops/contracts.ts. Escribí y corrí course-tests/week-08-offline-queue.test.ts, que demuestra el caso obligatorio 'Reinicio sin conexión' creando una segunda instancia del repositorio sobre el mismo almacenamiento simulado, sin estado compartido en memoria entre ambas instancias."
+    },
+    {
+      "studentId": "a3523110609",
+      "commitShas": [
+        "b012cfc2d9d8498fb532d8c8ee01a688d5739227"
+      ],
+      "files": [
+        "src/campusops/infrastructure/OfflineStoreMigration.ts",
+        "src/campusops/domain/OfflineSync.ts",
+        "src/campusops/application/SyncPendingOperationsUseCase.ts",
+        "src/campusops/domain/IncidentSyncGateway.ts",
+        "src/campusops/infrastructure/HttpIncidentSyncGateway.ts",
+        "course-tests/week-08-migration.test.ts",
+        "course-tests/week-08-sync-integration.test.ts",
+        "course-tests/week-08-sync-policy.test.ts",
+        "tools/week-08-trace.mjs",
+        "docs/sync-policy.md",
+        "docs/data-model.md",
+        "reports/week-08/migration-tests.json",
+        "evidence/week-08/individual.json"
+      ],
+      "tests": [
+        "npm test -- --ci --runInBand course-tests/week-08-migration.test.ts",
+        "npm test -- --ci --runInBand course-tests/week-08-sync-integration.test.ts course-tests/week-08-sync-policy.test.ts",
+        "npm run trace:week-08",
+        "make verify-week-08",
+        "make public-test-week-08"
+      ],
+      "reviews": [
+        "Revisión de integración de dev-cleber y dev-benkis con el evaluador de semana 8 sobre c17bb0c9ea33f40c69da802a508fe1b4d3269723: fallaba npm run audit:ci (shell-quote 1.10.0 crítico), faltaban docs/sync-policy.md y reports/week-08/migration-tests.json y engineering.json tenía un commitSha obsoleto; se corrigió en dev-carlos (override shell-quote 1.12.0, AsyncStorage 2.2.0, archivos y SHA).",
+        "Pruebas de mutación: hacer que el rollback no borre las claves sombra, confirmar ante un timeout, descartar ante un 403 o confirmar sin relectura hace fallar las pruebas correspondientes; el código se restauró antes de confirmar."
+      ],
+      "prediction": "Si la migración v1→v2 escribe en claves sombra y sólo confirma con una única escritura del puntero campusops.schemaVersion, entonces una falla inyectada antes del commit deja v1 idéntico byte a byte y sin esquema mezclado, y el siguiente inicio completa la migración conservando las 4 operaciones y las 2 incidencias; y si la sincronización sólo retira lo confirmado, la reasignación remota produce un conflicto que conserva la intención local y la asignación de technician-2, mientras que el reintento tras una respuesta perdida no duplica el efecto.",
+      "command": "npm test -- --ci --runInBand course-tests/week-08-migration.test.ts course-tests/week-08-sync-integration.test.ts course-tests/week-08-sync-policy.test.ts",
+      "observedResult": "20 pruebas pasaron (7 de migración, 5 de integración con el backend y 8 de política). Falla en write_incidents_v2 → rolled_back con bytes idénticos; proceso detenido tras escribir la cola v2 → la recuperación borró [\"campusops.offlineQueue.v2\"] y migró 4 operaciones y 2 incidencias; reasignación → forbidden, cola [\"op-reasig-start-01:conflict\", \"op-reasig-note-02:queued\", \"op-reasig-photo-03:queued\"], remoto v3 asignado a technician-2 y reviewConflict = {\"kind\": \"conflict\", \"fields\": [\"work\"]}; respuesta perdida → timeout con la operación en cola y luego replayed_duplicate con una sola entrada en el historial. make verify-week-08 y make public-test-week-08 en status pass sobre b012cfc2d9d8498fb532d8c8ee01a688d5739227.",
+      "explanation": "Implementé la migración transaccional v1→v2 (claves sombra, relectura, commit por puntero, rollback y recuperación al reiniciar) y la sincronización que conecta la cola persistente de Benkis y resolveSync/deduplicateOperations de Cleber con el backend real (403 y conflicto del mismo campo se conservan para resolución, cambios independientes se combinan y se reenvían con identidad derivada, sólo se retira lo confirmado); escribí las pruebas con fallas inyectadas, el script de trazas, docs/sync-policy.md, el §4 de docs/data-model.md y este reporte, e integré las ramas del equipo corrigiendo el audit crítico. Asistencia de IA declarada: Claude (Anthropic) redactó código y documentos bajo mi dirección; lo verifiqué corriendo las suites de Jest en mi equipo Windows, y el evaluador del curso (make verify/public-test) se ejecutó en Linux limpio sobre el mismo SHA porque en Windows Python no encuentra npm ([WinError 2]). El commit b012cfc2d9d8498fb532d8c8ee01a688d5739227 contiene toda esta aportación (código, pruebas, documentos y dependencias), aunque su mensaje sólo menciona las dependencias."
+    }
+  ]
+}

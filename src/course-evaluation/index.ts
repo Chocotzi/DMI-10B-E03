@@ -92,18 +92,110 @@ export function coordinateRefresh(events: readonly AuthEvent[]): Readonly<{
   };
 }
 
+function isDeepEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
+    return false;
+  }
+  if (Array.isArray(a) !== Array.isArray(b)) {
+    return false;
+  }
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (!isDeepEqual(a[i], b[i])) return false;
+    }
+    return true;
+  }
+  const objA = a as Record<string, unknown>;
+  const objB = b as Record<string, unknown>;
+  const keysA = Object.keys(objA);
+  const keysB = Object.keys(objB);
+  if (keysA.length !== keysB.length) return false;
+  for (const key of keysA) {
+    if (!Object.prototype.hasOwnProperty.call(objB, key)) return false;
+    if (!isDeepEqual(objA[key], objB[key])) return false;
+  }
+  return true;
+}
+
 export function resolveSync(
-  _base: SyncRecord,
-  _local: SyncRecord,
-  _remote: SyncRecord,
+  base: SyncRecord,
+  local: SyncRecord,
+  remote: SyncRecord,
 ): Readonly<{ kind: 'merged'; fields: JsonObject } | { kind: 'conflict'; fields: readonly string[] }> {
-  return pending('resolveSync');
+  const baseFields = (base && typeof base.fields === 'object' && base.fields !== null) ? base.fields : {};
+  const localFields = (local && typeof local.fields === 'object' && local.fields !== null) ? local.fields : {};
+  const remoteFields = (remote && typeof remote.fields === 'object' && remote.fields !== null) ? remote.fields : {};
+
+  const allKeys = Array.from(
+    new Set([
+      ...Object.keys(baseFields),
+      ...Object.keys(localFields),
+      ...Object.keys(remoteFields),
+    ]),
+  );
+
+  const conflicts: string[] = [];
+  const merged: Record<string, unknown> = {};
+
+  for (const key of allKeys) {
+    const valBase = baseFields[key];
+    const valLocal = localFields[key];
+    const valRemote = remoteFields[key];
+
+    const localChanged = !isDeepEqual(valBase, valLocal);
+    const remoteChanged = !isDeepEqual(valBase, valRemote);
+
+    if (localChanged && remoteChanged) {
+      if (isDeepEqual(valLocal, valRemote)) {
+        if (valLocal !== undefined) {
+          merged[key] = valLocal;
+        }
+      } else {
+        conflicts.push(key);
+      }
+    } else if (localChanged) {
+      if (valLocal !== undefined) {
+        merged[key] = valLocal;
+      }
+    } else if (remoteChanged) {
+      if (valRemote !== undefined) {
+        merged[key] = valRemote;
+      }
+    } else {
+      if (valBase !== undefined) {
+        merged[key] = valBase;
+      }
+    }
+  }
+
+  if (conflicts.length > 0) {
+    conflicts.sort((a, b) => a.localeCompare(b));
+    return {
+      kind: 'conflict',
+      fields: conflicts,
+    };
+  }
+
+  return {
+    kind: 'merged',
+    fields: merged,
+  };
 }
 
 export function deduplicateOperations<T extends Readonly<{ operationId: string }>>(
-  _operations: readonly T[],
+  operations: readonly T[],
 ): readonly T[] {
-  return pending('deduplicateOperations');
+  const seen = new Set<string>();
+  const result: T[] = [];
+  for (const op of operations) {
+    if (op && typeof op.operationId === 'string' && !seen.has(op.operationId)) {
+      seen.add(op.operationId);
+      result.push(op);
+    }
+  }
+  return result;
 }
 
 export function planRetry(_input: Readonly<{

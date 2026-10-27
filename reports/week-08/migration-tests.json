@@ -1,0 +1,322 @@
+{
+  "schemaVersion": 1,
+  "week": 8,
+  "commitSha": "7495a0774069d0b3e78837af6a72ed95ff72b2b6",
+  "generatedAt": "2026-10-25T22:59:52Z",
+  "environment": "Linux, Node 22.23.4, npm 10.9.9; npm ci limpio sobre este SHA; backend didáctico local en puerto libre; sin Internet público.",
+  "traceCommand": "npm run trace:week-08",
+  "traceFiles": [
+    "reports/week-08/generated-migration-trace.json",
+    "reports/week-08/generated-sync-trace.json"
+  ],
+  "checks": [
+    {
+      "id": "reinicio-sin-conexion",
+      "status": "pass",
+      "scenarioType": "boundary",
+      "command": "npm test -- --ci --runInBand course-tests/week-08-offline-queue.test.ts course-tests/week-08-sync-integration.test.ts",
+      "expected": "Tras cerrar y abrir la app, la cola conserva operationId y contenido; lo persistido no incluye credenciales (la sesión sigue en memoria).",
+      "observed": "6/6 pruebas de la cola de Benkis en verde (nueva instancia sobre el mismo almacenamiento). En la integración, la cola antes de sincronizar [\"op-reasig-start-01:queued\", \"op-reasig-note-02:queued\", \"op-reasig-photo-03:queued\"] se recuperó idéntica tras reabrir el almacén; claves persistidas [\"campusops.offlineQueue.v2\", \"campusops.schemaVersion\"]; credenciales persistidas: false.",
+      "evidence": "«conserva identidad y contenido de una operación encolada por un técnico sin conexión tras \"reiniciar la app\"» (passed); «reasignación concurrente: declara el conflicto y conserva la intención local y la asignación remota» (passed); traza generated-sync-trace.json → conflicto-reasignacion."
+    },
+    {
+      "id": "migracion-valida-v1-v2",
+      "status": "pass",
+      "scenarioType": "nominal",
+      "command": "npm test -- --ci --runInBand course-tests/week-08-migration.test.ts",
+      "expected": "Datos v1 (cola + caché de incidencias) pasan a v2 conservando incidencias, operaciones pendientes, su identidad, contenido y estado.",
+      "observed": "Reporte {\"status\": \"migrated\", \"schemaVersion\": 2, \"fromVersion\": 1, \"operations\": 4, \"incidents\": 2, \"basesDerived\": 3, \"duplicatesCollapsed\": 0, \"recoveredLeftovers\": [], \"legacyCleanupPending\": false, \"commitConfirmedAfterError\": false}. Antes: claves [\"campusops.incidents.v1\", \"campusops.offlineQueue.v1\"], cola [\"op-v1-start-001:queued\", \"op-v1-note-002:queued\", \"op-v1-photo-003:queued\", \"op-v1-resolve-004:conflict\"], incidencias [\"campus-inc-001@v1\", \"campus-inc-002@v4\"]. Después: claves [\"campusops.incidents.v2\", \"campusops.offlineQueue.v2\", \"campusops.schemaVersion\"], schemaVersion 2, cola [\"op-v1-start-001:queued\", \"op-v1-note-002:queued\", \"op-v1-photo-003:queued\", \"op-v1-resolve-004:conflict\"], incidencias [\"campus-inc-001@v1\", \"campus-inc-002@v4\"].",
+      "states": {
+        "before": {
+          "keys": [
+            "campusops.incidents.v1",
+            "campusops.offlineQueue.v1"
+          ],
+          "schemaVersion": null,
+          "queueV1": [
+            "op-v1-start-001:queued",
+            "op-v1-note-002:queued",
+            "op-v1-photo-003:queued",
+            "op-v1-resolve-004:conflict"
+          ],
+          "incidentsV1": [
+            "campus-inc-001@v1",
+            "campus-inc-002@v4"
+          ]
+        },
+        "after": {
+          "keys": [
+            "campusops.incidents.v2",
+            "campusops.offlineQueue.v2",
+            "campusops.schemaVersion"
+          ],
+          "schemaVersion": "2",
+          "queueV2": [
+            "op-v1-start-001:queued",
+            "op-v1-note-002:queued",
+            "op-v1-photo-003:queued",
+            "op-v1-resolve-004:conflict"
+          ],
+          "incidentsV2": [
+            "campus-inc-001@v1",
+            "campus-inc-002@v4"
+          ]
+        }
+      },
+      "evidence": "«migración válida: conserva incidencias y operaciones pendientes con su identidad y contenido» (passed); traza generated-migration-trace.json → migracion-valida."
+    },
+    {
+      "id": "migracion-fallida-rollback",
+      "status": "pass",
+      "scenarioType": "failure",
+      "command": "npm test -- --ci --runInBand course-tests/week-08-migration.test.ts",
+      "fault": "setItem(campusops.incidents.v2) lanza error",
+      "expected": "La transacción se revierte: sin claves v2, v1 idéntico byte a byte, la app sigue en v1 y el siguiente inicio completa la migración.",
+      "observed": "Reporte de la falla {\"status\": \"rolled_back\", \"schemaVersion\": 1, \"failedStep\": \"write_incidents_v2\", \"reason\": \"falla inyectada al escribir campusops.incidents.v2\", \"rollbackComplete\": true, \"recoveredLeftovers\": []}. Después de la falla: claves [\"campusops.incidents.v1\", \"campusops.offlineQueue.v1\"], bytes idénticos a antes: true, esquema usado por la app: v1. Recuperación {\"status\": \"migrated\", \"schemaVersion\": 2, \"fromVersion\": 1, \"operations\": 5, \"incidents\": 2, \"basesDerived\": 3, \"duplicatesCollapsed\": 0, \"recoveredLeftovers\": [], \"legacyCleanupPending\": false, \"commitConfirmedAfterError\": false}; después de recuperar: claves [\"campusops.incidents.v2\", \"campusops.offlineQueue.v2\", \"campusops.schemaVersion\"], cola [\"op-v1-start-001:queued\", \"op-v1-note-002:queued\", \"op-v1-photo-003:queued\", \"op-v1-resolve-004:conflict\", \"op-degraded-note-005:queued\"].",
+      "states": {
+        "before": {
+          "keys": [
+            "campusops.incidents.v1",
+            "campusops.offlineQueue.v1"
+          ],
+          "schemaVersion": null,
+          "queueV1": [
+            "op-v1-start-001:queued",
+            "op-v1-note-002:queued",
+            "op-v1-photo-003:queued",
+            "op-v1-resolve-004:conflict"
+          ],
+          "incidentsV1": [
+            "campus-inc-001@v1",
+            "campus-inc-002@v4"
+          ]
+        },
+        "afterFailure": {
+          "keys": [
+            "campusops.incidents.v1",
+            "campusops.offlineQueue.v1"
+          ],
+          "schemaVersion": null,
+          "queueV1": [
+            "op-v1-start-001:queued",
+            "op-v1-note-002:queued",
+            "op-v1-photo-003:queued",
+            "op-v1-resolve-004:conflict"
+          ],
+          "incidentsV1": [
+            "campus-inc-001@v1",
+            "campus-inc-002@v4"
+          ]
+        },
+        "afterRecovery": {
+          "keys": [
+            "campusops.incidents.v2",
+            "campusops.offlineQueue.v2",
+            "campusops.schemaVersion"
+          ],
+          "schemaVersion": "2",
+          "queueV2": [
+            "op-v1-start-001:queued",
+            "op-v1-note-002:queued",
+            "op-v1-photo-003:queued",
+            "op-v1-resolve-004:conflict",
+            "op-degraded-note-005:queued"
+          ],
+          "incidentsV2": [
+            "campus-inc-001@v1",
+            "campus-inc-002@v4"
+          ]
+        }
+      },
+      "evidence": "«falla inyectada al escribir v2: rollback sin esquema híbrido, la app sigue en v1 y la recuperación termina» (passed); traza → migracion-fallida-rollback."
+    },
+    {
+      "id": "migracion-interrumpida-recuperacion",
+      "status": "pass",
+      "scenarioType": "failure",
+      "command": "npm test -- --ci --runInBand course-tests/week-08-migration.test.ts",
+      "fault": "el proceso se detiene después de setItem(campusops.offlineQueue.v2)",
+      "expected": "Si el proceso muere antes del commit, el puntero no cambia, v1 sigue intacto y la clave sombra huérfana nunca se lee; al reiniciar se limpia y se migra.",
+      "observed": "Reporte del proceso detenido {\"status\": \"rolled_back\", \"schemaVersion\": 1, \"failedStep\": \"write_queue_v2\", \"reason\": \"proceso detenido tras escribir campusops.offlineQueue.v2\", \"rollbackComplete\": false, \"recoveredLeftovers\": []}. Después de la falla: claves [\"campusops.incidents.v1\", \"campusops.offlineQueue.v1\", \"campusops.offlineQueue.v2\"], schemaVersion null. Recuperación {\"status\": \"migrated\", \"schemaVersion\": 2, \"fromVersion\": 1, \"operations\": 4, \"incidents\": 2, \"basesDerived\": 3, \"duplicatesCollapsed\": 0, \"recoveredLeftovers\": [\"campusops.offlineQueue.v2\"], \"legacyCleanupPending\": false, \"commitConfirmedAfterError\": false}; después: claves [\"campusops.incidents.v2\", \"campusops.offlineQueue.v2\", \"campusops.schemaVersion\"].",
+      "states": {
+        "before": {
+          "keys": [
+            "campusops.incidents.v1",
+            "campusops.offlineQueue.v1"
+          ],
+          "schemaVersion": null,
+          "queueV1": [
+            "op-v1-start-001:queued",
+            "op-v1-note-002:queued",
+            "op-v1-photo-003:queued",
+            "op-v1-resolve-004:conflict"
+          ],
+          "incidentsV1": [
+            "campus-inc-001@v1",
+            "campus-inc-002@v4"
+          ]
+        },
+        "afterFailure": {
+          "keys": [
+            "campusops.incidents.v1",
+            "campusops.offlineQueue.v1",
+            "campusops.offlineQueue.v2"
+          ],
+          "schemaVersion": null,
+          "queueV1": [
+            "op-v1-start-001:queued",
+            "op-v1-note-002:queued",
+            "op-v1-photo-003:queued",
+            "op-v1-resolve-004:conflict"
+          ],
+          "incidentsV1": [
+            "campus-inc-001@v1",
+            "campus-inc-002@v4"
+          ],
+          "queueV2": [
+            "op-v1-start-001:queued",
+            "op-v1-note-002:queued",
+            "op-v1-photo-003:queued",
+            "op-v1-resolve-004:conflict"
+          ]
+        },
+        "afterRecovery": {
+          "keys": [
+            "campusops.incidents.v2",
+            "campusops.offlineQueue.v2",
+            "campusops.schemaVersion"
+          ],
+          "schemaVersion": "2",
+          "queueV2": [
+            "op-v1-start-001:queued",
+            "op-v1-note-002:queued",
+            "op-v1-photo-003:queued",
+            "op-v1-resolve-004:conflict"
+          ],
+          "incidentsV2": [
+            "campus-inc-001@v1",
+            "campus-inc-002@v4"
+          ]
+        }
+      },
+      "evidence": "«proceso detenido a mitad de la migración: la clave v2 sin confirmar nunca se lee y se limpia al reiniciar» (passed); traza → migracion-interrumpida-recuperacion."
+    },
+    {
+      "id": "migracion-commit-y-relectura",
+      "status": "pass",
+      "scenarioType": "failure",
+      "command": "npm test -- --ci --runInBand course-tests/week-08-migration.test.ts",
+      "expected": "Si falla la escritura del puntero se revierte; si la escritura llegó pero reportó error se conserva v2; una escritura v2 truncada se detecta en la relectura y se revierte.",
+      "observed": "Commit fallido {\"status\": \"rolled_back\", \"schemaVersion\": 1, \"failedStep\": \"commit\", \"reason\": \"falla inyectada al escribir campusops.schemaVersion\", \"rollbackComplete\": true, \"recoveredLeftovers\": []} (bytes idénticos: true); acuse perdido {\"status\": \"migrated\", \"schemaVersion\": 2, \"fromVersion\": 1, \"operations\": 4, \"incidents\": 2, \"basesDerived\": 3, \"duplicatesCollapsed\": 0, \"recoveredLeftovers\": [], \"legacyCleanupPending\": false, \"commitConfirmedAfterError\": true} con claves [\"campusops.incidents.v2\", \"campusops.offlineQueue.v2\", \"campusops.schemaVersion\"]; escritura corrupta {\"status\": \"rolled_back\", \"schemaVersion\": 1, \"failedStep\": \"verify_v2\", \"reason\": \"la relectura de v2 no coincide con lo escrito\", \"rollbackComplete\": true, \"recoveredLeftovers\": []} con claves [\"campusops.incidents.v1\", \"campusops.offlineQueue.v1\"].",
+      "evidence": "«falla en el commit: se revierte; si la escritura del puntero sí llegó, v2 se conserva» (passed); «la relectura detecta una escritura v2 corrupta y revierte sin tocar v1» (passed); traza → migracion-commit, migracion-escritura-corrupta."
+    },
+    {
+      "id": "migracion-datos-ilegibles",
+      "status": "pass",
+      "scenarioType": "boundary",
+      "command": "npm test -- --ci --runInBand course-tests/week-08-migration.test.ts",
+      "expected": "Con JSON v1 ilegible o versión de esquema desconocida no se migra, no se borra nada y openOfflineStore no entrega una cola que pueda sobrescribir los datos.",
+      "observed": "Reporte {\"status\": \"blocked\", \"schemaVersion\": 1, \"failedStep\": \"validate_v1\", \"reason\": \"campusops.offlineQueue.v1: JSON ilegible\"}; bytes idénticos después: true; openOfflineStore lanzó OfflineStoreUnavailableError; puntero \"3\" → blocked sin cambios.",
+      "evidence": "«datos v1 ilegibles o versión desconocida: no se migra, no se borra y no se entrega una cola que los sobrescriba» (passed); traza → migracion-datos-ilegibles."
+    },
+    {
+      "id": "migracion-idempotente",
+      "status": "pass",
+      "scenarioType": "boundary",
+      "command": "npm test -- --ci --runInBand course-tests/week-08-migration.test.ts",
+      "expected": "Repetir la migración sobre v2 no cambia nada; una instalación nueva queda directamente en v2.",
+      "observed": "Segunda ejecución {\"status\": \"already_current\", \"schemaVersion\": 2, \"cleanedLegacyKeys\": [], \"legacyCleanupPending\": false}; instalación nueva: claves [\"campusops.offlineQueue.v2\", \"campusops.schemaVersion\"], cola [\"op-fresh-start-001:queued\"].",
+      "evidence": "«es idempotente e inicia limpio en una instalación nueva» (passed); traza → migracion-idempotente."
+    },
+    {
+      "id": "conflicto-reasignacion",
+      "status": "pass",
+      "scenarioType": "failure",
+      "command": "npm test -- --ci --runInBand course-tests/week-08-sync-integration.test.ts",
+      "expected": "Inicio local sin conexión frente a reasignación remota: se declara el conflicto, se conserva la intención local en la cola y la asignación remota no se sobrescribe; la autorización por perfil se mantiene.",
+      "observed": "Resultados [{\"operationId\": \"op-reasig-start-01\", \"incidentId\": \"campus-inc-101\", \"result\": \"conflict\", \"reason\": \"forbidden\"}, {\"operationId\": \"op-reasig-note-02\", \"incidentId\": \"campus-inc-101\", \"result\": \"pending\", \"reason\": \"blocked_by_previous_operation\"}, {\"operationId\": \"op-reasig-photo-03\", \"incidentId\": \"campus-inc-101\", \"result\": \"pending\", \"reason\": \"blocked_by_previous_operation\"}]. Cola después: [\"op-reasig-start-01:conflict\", \"op-reasig-note-02:queued\", \"op-reasig-photo-03:queued\"]. Remoto (vista de coordinator-1): {\"version\": 3, \"fields\": {\"work\": {\"assignedTechnicianId\": \"technician-2\", \"status\": \"assigned\"}, \"priority\": \"medium\"}, \"history\": [\"assign-reasignacion\", \"reassign-campus-inc-101\"]}. Revisión de coordinación (resolveSync): {\"kind\": \"conflict\", \"fields\": [\"work\"]}. Segunda sincronización: [\"awaiting_resolution\", \"blocked_by_previous_operation\", \"blocked_by_previous_operation\"].",
+      "evidence": "«reasignación concurrente: declara el conflicto y conserva la intención local y la asignación remota» (passed); «CampusOps detects offline start versus remote reassignment without mutating either record» (passed); traza → conflicto-reasignacion."
+    },
+    {
+      "id": "combinacion-cambios-independientes",
+      "status": "pass",
+      "scenarioType": "nominal",
+      "command": "npm test -- --ci --runInBand course-tests/week-08-sync-integration.test.ts course-tests/week-08.test.ts course-tests/public/week-08.test.ts",
+      "expected": "Prioridad remota e inicio local desde la misma base se combinan; la intención se reenvía sobre la versión remota sin duplicar efectos ni mutar las entradas.",
+      "observed": "Base {\"version\": 2, \"fields\": {\"work\": {\"assignedTechnicianId\": \"technician-1\", \"status\": \"assigned\"}, \"priority\": \"medium\"}}. Resultado [{\"operationId\": \"op-merge-start-01\", \"incidentId\": \"campus-inc-102\", \"result\": \"confirmed\", \"reason\": \"rebased_independent_changes\", \"appliedWith\": \"op-merge-start-01:rebase:v3\", \"mergedFields\": {\"work\": {\"assignedTechnicianId\": \"technician-1\", \"status\": \"in_progress\"}, \"priority\": \"high\"}}]. Remoto después: {\"version\": 4, \"fields\": {\"work\": {\"assignedTechnicianId\": \"technician-1\", \"status\": \"in_progress\"}, \"priority\": \"high\"}, \"history\": [\"assign-combinacion\", \"prioritize-campus-inc-102\", \"op-merge-start-01:rebase:v3\"]}. Pruebas de Cleber 9/9 y públicas 3/3 en verde.",
+      "evidence": "«cambios independientes: combina la prioridad remota con el inicio local sin mutar las entradas» (passed); «merges independent field changes and reports same-field conflict» (passed); traza → combinacion-cambios-independientes."
+    },
+    {
+      "id": "operacion-repetida-respuesta-perdida",
+      "status": "pass",
+      "scenarioType": "failure",
+      "command": "npm test -- --ci --runInBand course-tests/week-08-sync-integration.test.ts",
+      "expected": "Con timeout_after_commit el servidor guarda pero el cliente no recibe respuesta: la operación sigue pendiente; al reintentar con la misma identidad hay un solo efecto y sólo entonces sale de la cola.",
+      "observed": "Primer intento [{\"operationId\": \"op-lost-start-01\", \"incidentId\": \"campus-inc-103\", \"result\": \"pending\", \"reason\": \"timeout\"}]; cola [\"op-lost-start-01:queued\"]; remoto tras el timeout {\"version\": 3, \"fields\": {\"work\": {\"assignedTechnicianId\": \"technician-1\", \"status\": \"in_progress\"}, \"priority\": \"medium\"}, \"history\": [\"assign-respuesta-perdida\", \"op-lost-start-01\"]}. Reintento [{\"operationId\": \"op-lost-start-01\", \"incidentId\": \"campus-inc-103\", \"result\": \"confirmed\", \"reason\": \"replayed_duplicate\", \"appliedWith\": \"op-lost-start-01\"}]; remoto después {\"version\": 3, \"fields\": {\"work\": {\"assignedTechnicianId\": \"technician-1\", \"status\": \"in_progress\"}, \"priority\": \"medium\"}, \"history\": [\"assign-respuesta-perdida\", \"op-lost-start-01\"]}.",
+      "evidence": "«respuesta perdida: lo no confirmado queda pendiente y el reintento con la misma identidad no duplica el efecto» (passed); traza → operacion-repetida-respuesta-perdida."
+    },
+    {
+      "id": "operacion-sin-confirmacion",
+      "status": "pass",
+      "scenarioType": "failure",
+      "command": "npm test -- --ci --runInBand course-tests/week-08-sync-integration.test.ts",
+      "expected": "500 y 429 no autorizan descartar: la operación sigue en la cola con su identidad, el siguiente ciclo espera más (backoff, respetando Retry-After) y se retira sólo al confirmarse.",
+      "observed": "500 → {\"outcomes\": [{\"operationId\": \"op-unconfirmed-note-01\", \"incidentId\": \"campus-inc-104\", \"result\": \"pending\", \"reason\": \"server\"}], \"nextAttemptInMs\": 1000}; 429 → {\"outcomes\": [{\"operationId\": \"op-unconfirmed-note-01\", \"incidentId\": \"campus-inc-104\", \"result\": \"pending\", \"reason\": \"rate_limited\", \"retryAfterMs\": 1000}], \"nextAttemptInMs\": 2000}; cola mientras falla [\"op-unconfirmed-note-01:queued\"] con versión remota 2; recuperación [{\"operationId\": \"op-unconfirmed-note-01\", \"incidentId\": \"campus-inc-104\", \"result\": \"confirmed\", \"reason\": \"applied\", \"appliedWith\": \"op-unconfirmed-note-01\"}]; remoto después {\"version\": 3, \"fields\": {\"work\": {\"assignedTechnicianId\": \"technician-1\", \"status\": \"assigned\"}, \"priority\": \"medium\"}, \"history\": [\"assign-sin-confirmacion\", \"op-unconfirmed-note-01\"]}.",
+      "evidence": "«error del servidor y 429: la operación sigue en la cola con su identidad hasta que se confirma» (passed); traza → operacion-sin-confirmacion."
+    },
+    {
+      "id": "cola-migrada-sincronizada",
+      "status": "pass",
+      "scenarioType": "nominal",
+      "command": "npm test -- --ci --runInBand course-tests/week-08-sync-integration.test.ts",
+      "expected": "Una operación escrita con el esquema v1 se migra con su base y se sincroniza sin perder su identidad.",
+      "observed": "Migración {\"status\": \"migrated\", \"schemaVersion\": 2, \"fromVersion\": 1, \"operations\": 1, \"incidents\": 1, \"basesDerived\": 1, \"duplicatesCollapsed\": 0, \"recoveredLeftovers\": [], \"legacyCleanupPending\": false, \"commitConfirmedAfterError\": false}; resultado [{\"operationId\": \"op-v1-legacy-note-01\", \"incidentId\": \"campus-inc-105\", \"result\": \"confirmed\", \"reason\": \"applied\", \"appliedWith\": \"op-v1-legacy-note-01\"}]; claves finales [\"campusops.incidents.v2\", \"campusops.offlineQueue.v2\", \"campusops.schemaVersion\"].",
+      "evidence": "«la cola migrada desde v1 conserva su identidad y se sincroniza» (passed); traza → cola-migrada-sincronizada."
+    },
+    {
+      "id": "politica-casos-limite",
+      "status": "pass",
+      "scenarioType": "boundary",
+      "command": "npm test -- --ci --runInBand course-tests/week-08-sync-policy.test.ts",
+      "expected": "Clave reutilizada con otro contenido, operación inválida, 401, 2xx ilegible, efecto aplicado antes de un cierre, entrada sin base, cambio remoto repetido, backoff finito e inmutabilidad.",
+      "observed": "8/8 pruebas en verde: «una clave reutilizada con otro contenido o una operación inválida se conservan como conflicto»; «sin sesión (401) detiene el ciclo: no envía más operaciones ni las descarta»; «una respuesta 2xx ilegible no confirma: se repite después con la misma clave y el mismo contenido»; «si el reenvío rebasado ya se aplicó antes de un cierre, el historial del servidor lo confirma sin reenviar»; «una entrada sin base (migrada desde v1) no puede probar independencia: queda en conflicto»; «si el estado remoto ya contiene la misma intención se confirma sin reenviar; si cambia otra vez, se reintenta luego»; «el retardo entre ciclos es exponencial, acotado, respeta Retry-After y siempre es finito»; «la revisión del conflicto y la intención local no mutan sus entradas».",
+      "evidence": "course-tests/week-08-sync-policy.test.ts con un gateway determinista (ramas que el backend didáctico no produce a voluntad)."
+    },
+    {
+      "id": "deduplicacion-operationId",
+      "status": "pass",
+      "scenarioType": "boundary",
+      "command": "npm test -- --ci --runInBand course-tests/week-08.test.ts course-tests/week-08-offline-queue.test.ts course-tests/public/week-08.test.ts",
+      "expected": "Al repetir operationId se conserva la primera operación sin mutar las entradas, tanto en la función pura como al encolar.",
+      "observed": "«preserves first occurrence of duplicated operationId without mutating array» (passed); «no duplica una operación reintentada con el mismo operationId antes de confirmarse» (passed); «deduplicates a replayed operation by stable identity» (passed).",
+      "evidence": "deduplicateOperations (Cleber) usado por PersistentOperationQueueRepository.enqueue (Benkis) y por transformV1ToV2."
+    },
+    {
+      "id": "pruebas-publicas-semana-08",
+      "status": "pass",
+      "scenarioType": "nominal",
+      "command": "npm test -- --ci --runInBand course-tests/public/week-08.test.ts",
+      "expected": "El contrato público de resolveSync y deduplicateOperations se cumple.",
+      "observed": "3/3 pruebas públicas en verde: «CampusOps detects offline start versus remote reassignment without mutating either record»; «merges independent field changes and reports same-field conflict»; «deduplicates a replayed operation by stable identity».",
+      "evidence": "course-tests/public/week-08.test.ts sin modificar."
+    },
+    {
+      "id": "make-verify-week-08",
+      "status": "pass",
+      "scenarioType": "nominal",
+      "command": "make verify-week-08",
+      "expected": "Todas las comprobaciones obligatorias del evaluador del curso pasan sobre este SHA.",
+      "observed": "status pass; base_files=pass, react_native_profile=pass, toolchain_scripts=pass, workflow_integrity=pass, secret_scan=pass, toolchain_1=pass, toolchain_2=pass, toolchain_3=pass, toolchain_4=pass, toolchain_5=pass.",
+      "evidence": "reports/week-08/verify.json, generado por el evaluador del curso sobre b012cfc2d9d8498fb532d8c8ee01a688d5739227."
+    },
+    {
+      "id": "make-public-test-week-08",
+      "status": "pass",
+      "scenarioType": "nominal",
+      "command": "make public-test-week-08",
+      "expected": "Todas las comprobaciones obligatorias del evaluador del curso pasan sobre este SHA.",
+      "observed": "status pass; base_files=pass, react_native_profile=pass, toolchain_scripts=pass, workflow_integrity=pass, secret_scan=pass, required_evidence=pass, schema:reports/week-08/migration-tests.json=pass, schema:evidence/week-08/engineering.json=pass, schema:evidence/week-08/individual.json=pass, toolchain_1=pass, toolchain_2=pass, toolchain_3=pass, toolchain_4=pass.",
+      "evidence": "reports/week-08/public-tests.json, generado por el evaluador del curso sobre b012cfc2d9d8498fb532d8c8ee01a688d5739227."
+    }
+  ]
+}

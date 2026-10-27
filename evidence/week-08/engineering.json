@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "week": 8,
-  "commitSha": "b012cfc2d9d8498fb532d8c8ee01a688d5739227",
+  "commitSha": "7495a0774069d0b3e78837af6a72ed95ff72b2b6",
   "decision": "Implementamos una política determinista de 3-way merge en resolveSync y deduplicación por operationId en deduplicateOperations. La sincronización evalúa las diferencias por contenido JSON profundo entre base, local y remoto: los cambios independientes se combinan limpiamente; cuando existe una modificación concurrente sobre el mismo campo a valores distintos (ejemplo: inicio offline en local frente a reasignación remota en el campo work), se declara formalmente el conflicto con los campos ordenados alfabéticamente sin mutar los registros de entrada ni descartar la cola de operaciones. deduplicateOperations garantiza la idempotencia en reintentos preservando la primera aparición sin mutar las entradas.",
   "alternatives": [
     "Last-Write-Wins (LWW) basado en timestamp del cliente: descarta silenciosamente cambios offline si el reloj del dispositivo difiere o ante reasignaciones remotas concurrentes, causando pérdida de datos e inconsistencia en auditorías.",

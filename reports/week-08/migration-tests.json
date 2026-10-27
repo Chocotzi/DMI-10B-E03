@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "week": 8,
-  "commitSha": "b012cfc2d9d8498fb532d8c8ee01a688d5739227",
+  "commitSha": "7495a0774069d0b3e78837af6a72ed95ff72b2b6",
   "generatedAt": "2026-10-25T22:59:52Z",
   "environment": "Linux, Node 22.23.4, npm 10.9.9; npm ci limpio sobre este SHA; backend didáctico local en puerto libre; sin Internet público.",
   "traceCommand": "npm run trace:week-08",

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "week": 9,
+  "teamId": "DMI-10B-E03",
+  "members": [
+    {
+      "studentId": "a3523110227",
+      "commitShas": [
+        "451af5eafdba5339fcf0e82376f0ef22fdd579ce"
+      ],
+      "files": [
+        "src/campusops/domain/LocationProvider.ts",
+        "src/campusops/infrastructure/HttpGeocodingClient.ts",
+        "src/campusops/infrastructure/PersistentLocationCache.ts",
+        "src/campusops/application/ResolveIncidentLocationUseCase.ts",
+        "course-tests/week-09-geocoding-client.test.ts",
+        "docs/resilience-policy.md"
+      ],
+      "tests": [
+        "npm test -- --ci --runInBand course-tests/week-09-geocoding-client.test.ts",
+        "npm run typecheck",
+        "npm run lint",
+        "npm run check:architecture"
+      ],
+      "reviews": [],
+      "prediction": "Si el adaptador HTTP de geocodificación convierte toda falla del proveedor (timeout, 429, 5xx, desconexión, cuerpo mal formado) en un resultado 'no disponible' en vez de lanzar una excepción, y la caché solo guarda respuestas ya validadas, entonces la incidencia siempre obtiene una ubicación: la del proveedor, la de la caché o la manual, sin coordenadas inventadas; y una respuesta inválida nunca se sirve después como si fuera buena.",
+      "command": "npm test -- --ci --runInBand course-tests/week-09-geocoding-client.test.ts",
+      "observedResult": "Las 23 pruebas pasaron contra el backend del curso levantado localmente con datos ficticios: success, incomplete e invalid_coordinates llegan como respuesta sin validar; rate_limited devuelve 429 con retryAfterMs 1000; server_error y malformed quedan como no disponibles; un proveedor lento (1200 ms) contra un límite de 200 ms termina como timeout en menos de 1 s; un puerto sin servidor da network; una consulta vacía no hace llamada de red. En el caso de uso: la caché sobrevive a un reinicio simulado, ignora mayúsculas y espacios, no guarda datos inválidos, usa caché vencida ante 429, no sirve caché de más de maxStaleMs e ignora una caché corrupta. Las pruebas encontraron que Date.parse aceptaba Retry-After '-3' como fecha (0 ms); se corrigió aceptando solo el formato HTTP-date. typecheck, lint y check:architecture terminaron sin errores.",
+      "explanation": "Implementé la integración con el proveedor de ubicación: los puertos LocationProvider y LocationCache en domain, el adaptador HttpGeocodingClient con límite de tiempo real y lectura acotada de Retry-After, la caché PersistentLocationCache sobre el KeyValueStorage de la cola offline de la semana 8 (clave v1, máximo 50 entradas, revalidación al leer) y el caso de uso ResolveIncidentLocationUseCase, que decide caché fresca, proveedor validado con selectIncidentLocation, caché vencida o etiqueta manual. Documenté el contrato y las reglas de caché en la sección 1 de docs/resilience-policy.md. Mientras selectIncidentLocation siga pendiente, las pruebas del caso de uso usan un sustituto que sigue el contrato publicado y cambian solas a la función real cuando exista; el código de la app siempre usa la real."
+    },
+    {
+      "studentId": "a3523110609",
+      "commitShas": [],
+      "files": [
+        "src/course-evaluation/index.ts",
+        "course-tests/week-09.test.ts"
+      ],
+      "tests": [],
+      "reviews": [],
+      "prediction": "PENDIENTE: a3523110609 llena este bloque con su commit real de planRetry y selectIncidentLocation.",
+      "command": "PENDIENTE: comando que a3523110609 ejecutó.",
+      "observedResult": "PENDIENTE: resultado que a3523110609 observó.",
+      "explanation": "PENDIENTE: a3523110609 describe su aportación real."
+    },
+    {
+      "studentId": "a3523110321",
+      "commitShas": [],
+      "files": [
+        "src/campusops/infrastructure/HttpIncidentSyncGateway.ts",
+        "src/campusops/application/SyncPendingOperationsUseCase.ts",
+        "course-tests/week-09-retry-integration.test.ts"
+      ],
+      "tests": [],
+      "reviews": [],
+      "prediction": "PENDIENTE: a3523110321 llena este bloque con su commit real de reintentos y respuesta perdida.",
+      "command": "PENDIENTE: comando que a3523110321 ejecutó.",
+      "observedResult": "PENDIENTE: resultado que a3523110321 observó.",
+      "explanation": "PENDIENTE: a3523110321 describe su aportación real."
+    }
+  ]
+}

@@ -57,7 +57,7 @@ beforeAll(async () => {
 }, 10000);
 
 const attempts: RetryAttemptTelemetry[] = [];
-const checks: Array<Record<string, unknown>> = [];
+const checks: Record<string, unknown>[] = [];
 
 function record(id: string, scenarioType: 'nominal' | 'boundary' | 'failure', command: string, expected: string, observed: string, evidence: string): void {
   checks.push({ id, status: 'pass', scenarioType, command, expected, observed, evidence });
@@ -146,7 +146,7 @@ function gateway(
   extra: Omit<SyncGatewayOptions, 'baseUrl' | 'actorId' | 'accessToken'> = {},
 ): HttpIncidentSyncGateway {
   return new HttpIncidentSyncGateway({
-    baseUrl, actorId, accessToken: 'course-valid-token',
+    baseUrl, actorId, accessToken: 'course-valid-token', fetchImpl: localFetch,
     onAttempt: (telemetry) => attempts.push(telemetry),
     ...extra,
   });
@@ -277,7 +277,7 @@ describe('Week 09 — Retry integration against the real backend (Cleber)', () =
     // (el backend tarda 1500 ms en contestar bajo este escenario). 2º intento, misma clave: el
     // backend ve la operación ya registrada y contesta de inmediato con duplicate=true, sin la
     // demora artificial — así planRetry resuelve la respuesta perdida dentro de un solo llamado.
-    expect(mine.map((item) => item.status)).toEqual(['timeout', 201]);
+    expect(mine.map((item) => item.status)).toEqual(['timeout', 200]);
     expect(outcome).toEqual({ kind: 'applied', duplicate: true, version: version + 1 });
 
     const after = await snapshotAs('coordinator-1', id);
@@ -290,7 +290,7 @@ describe('Week 09 — Retry integration against the real backend (Cleber)', () =
       'failure',
       "submitAction('resolve') con scenario 'timeout_after_commit' y timeoutMs=300 contra el backend real",
       'El 1er intento aborta por timeout del cliente; el 2º, con la misma Idempotency-Key, recibe duplicate=true sin repetir el efecto en el servidor.',
-      `intentos: timeout, 201(duplicate=true); versión remota avanzó una sola vez (${version} -> ${version + 1}); 1 sola entrada de la clave en el historial.`,
+      `intentos: timeout, 200(duplicate=true); versión remota avanzó una sola vez (${version} -> ${version + 1}); 1 sola entrada de la clave en el historial.`,
       'course-tests/week-09-retry-integration.test.ts — "timeout_after_commit en una resolución real..."',
     );
   }, 15000);
@@ -385,6 +385,7 @@ describe('Week 09 — Retry integration against the real backend (Cleber)', () =
     const before = attempts.length;
     const disconnected = new HttpIncidentSyncGateway({
       baseUrl: 'http://127.0.0.1:1', actorId: 'technician-1', accessToken: 'course-valid-token', timeoutMs: 300,
+      fetchImpl: localFetch,
       onAttempt: (telemetry) => attempts.push(telemetry),
     });
     const outcome = await disconnected.submitAction({

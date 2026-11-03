@@ -29,6 +29,31 @@ import type { OperationQueueRepository } from '../domain/OperationQueueRepositor
  * - Independent remote changes are combined with `resolveSync` and the
  *   intention is re-sent on top of the remote version with a deterministic id.
  * - Later entries of an incident wait while an earlier one is not confirmed.
+ *
+ * Week 09 — two independent retry layers, so neither has to know about the
+ * other:
+ *
+ * - `synchronize()` (the normal path) and `reconcile()` (the version-conflict
+ *   resolution path) both reach the network only through `IncidentSyncGateway`.
+ *   Its HTTP adapter (`HttpIncidentSyncGateway`) now resolves every one of
+ *   those exchanges with `planRetry`: a client timeout and a transient
+ *   408/429/5xx are retried in place, with the real `Retry-After` or
+ *   progressive backoff, bounded, and always under the *same*
+ *   `Idempotency-Key` on a write — this is what lets a lost response
+ *   (`timeout_after_commit`) resolve as a safe replay within a single call
+ *   instead of staying `pending` until the next cycle. See
+ *   docs/resilience-policy.md §3 and `course-tests/week-09-retry-integration.test.ts`.
+ * - What reaches `execute()` already gave up at that layer (a disconnection,
+ *   an ambiguous 2xx, or a transient failure that outlasted the gateway's own
+ *   budget) or is not safely retriable at all (403, a real conflict, an
+ *   expired session). For that, `nextSyncDelayMs` below is this use case's
+ *   OWN, coarser backoff between whole sync cycles — it never calls
+ *   `planRetry` itself, on purpose: `planRetry`'s bounded attempt budget is
+ *   for one network exchange, not for "keep this offline queue alive
+ *   indefinitely", which is this use case's job. Every entry that is not yet
+ *   confirmed is always visible in `SyncSummary` with a `reason` (never
+ *   silently dropped), which is how a standing failure is reported, cycle
+ *   after cycle, until a person resolves it or the connection recovers.
  */
 
 export type SyncReason =
@@ -87,7 +112,9 @@ export const SYNC_RETRY_AFTER_MAX_MS = 300_000;
 /**
  * Delay before the next synchronization cycle: exponential (1 s, 2 s, 4 s …)
  * capped at 30 s, and never shorter than a valid Retry-After (capped at 5 min).
- * Always finite. Bounded per-request retries belong to Week 09 (`planRetry`).
+ * Always finite. Bounded per-request retries are `planRetry`'s job, already
+ * applied inside `HttpIncidentSyncGateway` (Week 09); this function only
+ * decides how long to wait before trying the WHOLE queue again.
  */
 export function nextSyncDelayMs(failedCycles: number, retryAfterMs?: number): number {
   const cycles = Number.isFinite(failedCycles) && failedCycles >= 1 ? Math.floor(failedCycles) : 1;

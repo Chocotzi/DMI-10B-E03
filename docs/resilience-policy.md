@@ -8,7 +8,7 @@ sincronización de acciones sobre incidencias.
 | --- | --- | --- |
 | 1. Proveedor de ubicación y caché | a3523110227 | Listo |
 | 2. Selección de ubicación y límites de reintento (`selectIncidentLocation`, `planRetry`) | a3523110609 | Listo |
-| 3. Reintentos en red y respuesta perdida | a3523110321 | Pendiente |
+| 3. Reintentos en red y respuesta perdida | a3523110321 | Listo |
 
 ---
 
@@ -180,6 +180,119 @@ justificación de los límites está en `evidence/week-09/engineering.json`.
 
 ## 3. Reintentos en red y respuesta perdida
 
-_Pendiente — a3523110321._ Integración de `planRetry` en la sincronización,
-escenario `timeout_after_commit` sin duplicar efectos, y métricas en
-`reports/week-09/`.
+### 3.1 Dónde vive cada reintento
+
+Dos capas, cada una con una sola responsabilidad:
+
+| Capa | Dónde | Qué decide | Con qué |
+| --- | --- | --- | --- |
+| Por solicitud | `HttpIncidentSyncGateway` (`submitAction`, `fetchSnapshot`) | Si ESTA llamada HTTP se repite, cuánto esperar y cuándo rendirse | `planRetry` (§2.2) |
+| Entre ciclos | `SyncPendingOperationsUseCase` (`nextSyncDelayMs`, ya de la semana 8) | Cuánto esperar antes de reintentar TODA la cola | Backoff propio, no `planRetry` |
+
+`synchronize()` (sincronización normal) y `reconcile()` (resolución tras un
+`version_conflict`) de `SyncPendingOperationsUseCase` llegan a la red
+únicamente a través de `IncidentSyncGateway`; como su adaptador HTTP aplica
+`planRetry` a cada intercambio, **ambos métodos quedan cubiertos** sin que el
+caso de uso necesite saber nada de reintentos de red. Esa es la frontera a
+propósito: `planRetry` acota una sola llamada (máximo 4 solicitudes); el caso
+de uso sigue encargado de que una cola pendiente nunca se abandone, ciclo tras
+ciclo, hasta que la persona la resuelva o la conexión vuelva.
+
+### 3.2 Qué se reintenta dentro de una llamada y qué no
+
+| Resultado del intento | `planRetry` interviene | Por qué |
+| --- | --- | --- |
+| Timeout del cliente (`timeout`) | Sí (`status: 'timeout'`) | Transitorio; con `Idempotency-Key` estable, repetir es seguro — es exactamente el caso de respuesta perdida (§3.3). |
+| 408, 429, 500, 502, 503, 504 | Sí | Mismo conjunto publicado en §2.2; un `Retry-After` válido del backend fija la demora, si no hay, se usa el backoff 500/1000/2000 ms. |
+| Desconexión (`network`) | No | `planRetry` no tiene entrada para "sin conexión"; insistir de inmediato contra un dispositivo desconectado no ayuda. El intento queda `unavailable: network` y lo retoma el siguiente ciclo de `SyncPendingOperationsUseCase`. |
+| 2xx no legible (`invalid_response`) | No | Es ambiguo (¿se aplicó o no?); no está en los estados que `planRetry` conoce. Se deja igual para el siguiente ciclo, con la misma clave. |
+| 401, 403, 409, 422, otros 4xx, 501 | No (`planRetry` devuelve `retry: false`) | No transitorios: repetir no cambia el resultado. |
+
+En **todas** las llamadas de escritura (`submitAction`) se usa el mismo
+`Idempotency-Key` del inicio al fin, incluidas las de `reconcile()` (que usa
+`rebasedOperationId`, también estable). Por eso `planRetry` nunca ve un POST
+sin clave aquí: la condición `requiresStableIdempotencyKey` existe para quien
+integre el gateway sin generar una, no para este flujo.
+
+### 3.3 Respuesta perdida (`timeout_after_commit`) sin duplicar el efecto
+
+Escenario del backend didáctico: el servidor aplica el cambio y registra la
+`Idempotency-Key` de inmediato (antes de intentar responder), pero retiene la
+respuesta 1500 ms; si el `timeoutMs` del cliente es menor, el cliente aborta
+primero. Sin reintento, la operación queda huérfana hasta el siguiente ciclo
+completo (lo que ya demostraba la semana 8). Con `planRetry` conectado al
+gateway:
+
+1. **Intento 1:** el cliente aborta por su propio timeout → `{ kind:
+   'unavailable', code: 'timeout' }`. `planRetry({ method: 'POST', status:
+   'timeout', attempt: 1, idempotencyKey })` → `retry: true, delayMs: 500`.
+2. **Intento 2** (misma `Idempotency-Key`): el backend ya tiene la operación
+   registrada, así que contesta de inmediato (sin la demora artificial) con
+   `duplicate: true` y la versión ya aplicada.
+3. El gateway devuelve `{ kind: 'applied', duplicate: true, version }` — una
+   sola vez el efecto en el servidor, confirmado en una sola llamada a
+   `submitAction`/`execute()`, no en dos ciclos de sincronización.
+
+Esto se demuestra sobre una resolución real (`action: 'resolve'`, con
+`diagnosis`) en `course-tests/week-09-retry-integration.test.ts`, contra el
+backend del curso levantado como proceso aparte (no un doble que finja el
+resultado): tanto a través del gateway solo como de
+`SyncPendingOperationsUseCase.execute()` completo, verificando después con un
+`fetchSnapshot` fresco que el historial remoto tiene la clave una sola vez y
+la incidencia pasó a `resolved` exactamente una vez.
+
+Esto deja una conclusión explícita sobre la semana 8: la prueba
+`course-tests/week-08-sync-integration.test.ts` (*"respuesta perdida: lo no
+confirmado queda pendiente..."*) describía el comportamiento *antes* de que
+existiera el reintento por solicitud — un timeout de escritura se quedaba
+`pending` hasta un segundo `execute()` ("reconexión"). Con `planRetry` en el
+gateway, ese mismo escenario se resuelve dentro del primer `execute()`: es una
+mejora intencional, no una regresión, y la evidencia de la semana 8 sigue
+siendo válida para el commit que evaluó (`docs/EVIDENCE_CONTRACT.md` sobre
+`commitSha`); no se modificó ese archivo de prueba.
+
+### 3.4 Cuándo rendirse e informar el fallo
+
+- **Por solicitud:** al intento 4 (`attempt > RETRY_MAX_ATTEMPT`), o ante un
+  estado no transitorio, o ante `network`/`invalid_response` (que `planRetry`
+  no reintenta), el gateway devuelve el resultado final de ESE intento — nunca
+  lanza una excepción ni inventa un resultado.
+- **Por operación:** ese resultado llega a `SyncPendingOperationsUseCase`
+  como un `SyncOutcome` con `result` y `reason` explícitos. Nada se descarta
+  en silencio: un fallo persistente queda `pending` (o `conflict`, si no es
+  seguro reintentarlo) en cada `SyncSummary`, ciclo tras ciclo, hasta que se
+  resuelva — igual que la cola offline de la semana 8.
+- **Ubicación manual (secciones 1-2, Benkis/Carlos):** cuando el proveedor de
+  geocodificación agota su propio presupuesto (o no hay caché vigente),
+  `ResolveIncidentLocationUseCase` nunca "falla": devuelve la etiqueta manual.
+  Es la misma filosofía aplicada a un dominio distinto — la incidencia, o la
+  sincronización, siempre terminan en un estado observable y nunca se bloquean
+  esperando indefinidamente a una red que no responde.
+
+### 3.5 Telemetría
+
+Cada intento HTTP (reintentado o no) se reporta a través de `onAttempt` con
+solo los campos técnicos que `docs/CAMPUSOPS_API.md` permite conservar:
+`incidentId`, `correlationId` (la `Idempotency-Key`, solo en POST), `method`,
+`attempt`, `status`, `durationMs`, `retry`, `delayMs` — nunca cuerpos ni
+encabezados — pasados por `redactForTelemetry` (semana 4) antes de salir del
+gateway. `course-tests/week-09-retry-integration.test.ts` recoge estos
+registros reales y los vuelca, junto con el detalle de cada escenario de
+falla inyectada, en `reports/week-09/retry-metrics.json` y
+`reports/week-09/fault-injection.json`.
+
+### 3.6 Evidencia
+
+`course-tests/week-09-retry-integration.test.ts` corre contra
+`course-backend/server.mjs` levantado como proceso aparte (mismo patrón que
+`course-tests/week-08-sync-integration.test.ts`) y cubre: un `GET` que agota
+su presupuesto ante un 429 sostenido, respetando el `Retry-After` real; un
+`POST` que se recupera de dos 500 transitorios con el backoff progresivo sin
+duplicar el efecto; una resolución real con `timeout_after_commit` resuelta en
+una sola llamada, por el gateway solo y por el caso de uso completo; el
+`fetchSnapshot` de `reconcile()` recuperándose de un 429 pasajero; y una
+desconexión real (puerto sin servidor) con un único intento, sin reintento
+local. Comandos: `npm test -- --ci --runInBand
+course-tests/week-09-retry-integration.test.ts`; con `WEEK09_WRITE_REPORTS=1`
+además escribe `reports/week-09/retry-metrics.json` y
+`reports/week-09/fault-injection.json` con el `commitSha` real.

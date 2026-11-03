@@ -198,14 +198,58 @@ export function deduplicateOperations<T extends Readonly<{ operationId: string }
   return result;
 }
 
-export function planRetry(_input: Readonly<{
+/**
+ * Week 09 retry budget. Values are part of the published contract and are
+ * justified in docs/resilience-policy.md §2 and evidence/week-09/engineering.json.
+ */
+export const RETRY_MAX_ATTEMPT = 3;
+export const RETRY_BASE_DELAY_MS = 500;
+/** Same ceiling the HTTP adapter applies to Retry-After (HttpGeocodingClient). */
+export const RETRY_MAX_DELAY_MS = 60_000;
+
+const RETRYABLE_HTTP_STATUS: ReadonlySet<number> = new Set([408, 429, 500, 502, 503, 504]);
+
+type RetryPlan = Readonly<{ retry: boolean; delayMs: number; requiresStableIdempotencyKey: boolean }>;
+
+const NO_RETRY: RetryPlan = Object.freeze({ retry: false, delayMs: 0, requiresStableIdempotencyKey: false });
+
+function isStableIdempotencyKey(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isRetryableStatus(status: unknown): boolean {
+  if (status === 'timeout') return true;
+  return typeof status === 'number' && Number.isInteger(status) && RETRYABLE_HTTP_STATUS.has(status);
+}
+
+function isValidRetryAfter(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= RETRY_MAX_DELAY_MS;
+}
+
+export function planRetry(input: Readonly<{
   method: 'GET' | 'POST';
   status: number | 'timeout';
   attempt: number;
   retryAfterMs?: number;
   idempotencyKey?: string;
-}>): Readonly<{ retry: boolean; delayMs: number; requiresStableIdempotencyKey: boolean }> {
-  return pending('planRetry');
+}>): RetryPlan {
+  if (typeof input !== 'object' || input === null) return NO_RETRY;
+
+  // Anything that is not a GET is treated as non-idempotent: repeating it
+  // without a stable key could duplicate the effect on the server.
+  if (input.method !== 'GET' && !isStableIdempotencyKey(input.idempotencyKey)) {
+    return { retry: false, delayMs: 0, requiresStableIdempotencyKey: true };
+  }
+
+  const { attempt } = input;
+  if (!Number.isSafeInteger(attempt) || attempt < 1 || attempt > RETRY_MAX_ATTEMPT) return NO_RETRY;
+  if (!isRetryableStatus(input.status)) return NO_RETRY;
+
+  const delayMs = isValidRetryAfter(input.retryAfterMs)
+    ? input.retryAfterMs
+    : Math.min(RETRY_BASE_DELAY_MS * 2 ** (attempt - 1), RETRY_MAX_DELAY_MS);
+
+  return { retry: true, delayMs, requiresStableIdempotencyKey: false };
 }
 
 export function reduceRemoteResponses(_input: Readonly<{
@@ -221,7 +265,23 @@ export function reducePermissionLifecycle(
   return pending('reducePermissionLifecycle');
 }
 
-/** Week 09: see docs/CAMPUSOPS_API.md; this is not a completed solution. */
-export function selectIncidentLocation(_provider: unknown, _manualLabel: string): IncidentLocation {
-  return pending('selectIncidentLocation');
+function isCoordinate(value: unknown, limit: number): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= -limit && value <= limit;
+}
+
+/**
+ * Week 09: the only place that decides whether an external location is
+ * trustworthy (docs/CAMPUSOPS_API.md). Pure: never throws, never invents
+ * coordinates, never copies extra fields from the provider.
+ */
+export function selectIncidentLocation(provider: unknown, manualLabel: string): IncidentLocation {
+  const manual: IncidentLocation = { source: 'manual', label: manualLabel };
+  if (typeof provider !== 'object' || provider === null || Array.isArray(provider)) return manual;
+
+  const candidate = provider as Record<string, unknown>;
+  const { label, latitude, longitude } = candidate;
+  if (typeof label !== 'string' || label.trim().length === 0) return manual;
+  if (!isCoordinate(latitude, 90) || !isCoordinate(longitude, 180)) return manual;
+
+  return { source: 'provider', label: label.trim(), latitude, longitude };
 }

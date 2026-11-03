@@ -7,7 +7,7 @@ sincronización de acciones sobre incidencias.
 | Sección | Responsable | Estado |
 | --- | --- | --- |
 | 1. Proveedor de ubicación y caché | a3523110227 | Listo |
-| 2. Selección de ubicación y límites de reintento (`selectIncidentLocation`, `planRetry`) | a3523110609 | Pendiente |
+| 2. Selección de ubicación y límites de reintento (`selectIncidentLocation`, `planRetry`) | a3523110609 | Listo |
 | 3. Reintentos en red y respuesta perdida | a3523110321 | Pendiente |
 
 ---
@@ -114,9 +114,69 @@ la prueba; el código de la app siempre usa la función real.
 
 ## 2. Selección de ubicación y límites de reintento
 
-_Pendiente — a3523110609._ Reglas de `selectIncidentLocation` y de
-`planRetry`: intentos acotados, `Retry-After`, demoras finitas y `POST` solo
-con identidad estable.
+Ambas funciones viven en `src/course-evaluation/index.ts`, son puras (sin red,
+sin reloj, sin estado) y nunca lanzan excepciones.
+
+### 2.1 `selectIncidentLocation(provider, manualLabel)`
+
+Acepta el resultado del proveedor **solo si** es un objeto (no arreglo) con:
+
+- `label` de tipo `string` que no quede vacío tras `trim()`;
+- `latitude` de tipo `number`, finita, en `[-90, 90]`;
+- `longitude` de tipo `number`, finita, en `[-180, 180]`.
+
+Entonces devuelve `{ source: 'provider', label, latitude, longitude }` (la
+etiqueta recortada y **solo** esos campos; lo demás que mande el proveedor se
+descarta). En cualquier otro caso devuelve `{ source: 'manual', label:
+manualLabel }`:
+
+| Entrada | Resultado |
+| --- | --- |
+| `null`, `undefined`, texto, número, arreglo | manual |
+| Error como dato (`{ status: 429 }`, `{ kind: 'unavailable' }`, `Error`) | manual |
+| Falta `label`, `latitude` o `longitude` | manual |
+| `label` vacío, de espacios o no textual | manual |
+| Coordenadas fuera de rango, `NaN`, `Infinity` | manual |
+| Coordenadas como texto, booleano, `null` u objeto `Number` | manual |
+| Límites exactos (`±90`, `±180`, `0`) | provider |
+
+**Nunca se inventan coordenadas.** No se usa `0,0`, el centro del campus ni
+la última ubicación conocida: una coordenada falsa no se distingue de una
+real y manda a la cuadrilla al lugar equivocado. La etiqueta manual es menos
+precisa pero es lo que la persona realmente dijo.
+
+### 2.2 `planRetry(input)`
+
+| Constante | Valor | Motivo |
+| --- | --- | --- |
+| `RETRY_MAX_ATTEMPT` | 3 | Se reintenta después de los intentos 1, 2 y 3; **desde el 4 no**. Máximo 4 solicitudes por operación. |
+| `RETRY_BASE_DELAY_MS` | 500 | Backoff exponencial sin `Retry-After`: 500, 1000, 2000 ms. |
+| `RETRY_MAX_DELAY_MS` | 60 000 | Mismo tope que `MAX_RETRY_AFTER_MS` del adaptador HTTP. |
+
+Reglas, en este orden:
+
+1. Entrada que no es objeto → `{ retry: false, delayMs: 0, requiresStableIdempotencyKey: false }`.
+2. **Cualquier método que no sea `GET` sin `idempotencyKey` textual no vacía →
+   `{ retry: false, delayMs: 0, requiresStableIdempotencyKey: true }`**, sin
+   importar el estado. Si la respuesta se perdió después del commit, repetir
+   sin identidad estable duplicaría el efecto.
+3. `attempt` que no es entero seguro ≥ 1, o mayor a 3 → no se reintenta.
+4. Solo son reintentables `timeout`, 408, 429, 500, 502, 503 y 504. Los 2xx,
+   4xx restantes (400, 401, 403, 404, 409, 422) y 501 no cambian al repetir.
+5. `retryAfterMs` válido = número finito en `[0, 60 000]`; se usa tal cual.
+   Negativo, `NaN`, `Infinity`, mayor a 60 s o de otro tipo se ignora y se usa
+   el backoff. Así **toda demora es finita** y ≤ 60 s.
+
+El backoff es determinista (sin jitter) para que la función sea pura y
+comprobable; si hace falta repartir carga entre clientes, el jitter se añade
+en la capa de red (sección 3) sin cambiar este contrato.
+
+### 2.3 Evidencia
+
+`course-tests/week-09.test.ts` (70 pruebas, sin red) y
+`course-tests/public/week-09.test.ts` (4) pasan. Con la función real,
+`course-tests/week-09-geocoding-client.test.ts` (23) sigue en verde. La
+justificación de los límites está en `evidence/week-09/engineering.json`.
 
 ## 3. Reintentos en red y respuesta perdida
 

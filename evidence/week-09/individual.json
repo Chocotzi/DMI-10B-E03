@@ -30,17 +30,27 @@
     },
     {
       "studentId": "a3523110609",
-      "commitShas": [],
+      "commitShas": [
+        "6ece4a67dcc7abf619702367d5d669e5c73e1687"
+      ],
       "files": [
         "src/course-evaluation/index.ts",
-        "course-tests/week-09.test.ts"
+        "course-tests/week-09.test.ts",
+        "evidence/week-09/engineering.json",
+        "docs/resilience-policy.md"
       ],
-      "tests": [],
+      "tests": [
+        "npm test -- --ci --runInBand course-tests/week-09.test.ts course-tests/public/week-09.test.ts",
+        "npm test -- --ci --runInBand course-tests/week-09-geocoding-client.test.ts",
+        "npm run typecheck",
+        "npm run lint",
+        "npm run check:architecture"
+      ],
       "reviews": [],
-      "prediction": "PENDIENTE: a3523110609 llena este bloque con su commit real de planRetry y selectIncidentLocation.",
-      "command": "PENDIENTE: comando que a3523110609 ejecutó.",
-      "observedResult": "PENDIENTE: resultado que a3523110609 observó.",
-      "explanation": "PENDIENTE: a3523110609 describe su aportación real."
+      "prediction": "Si selectIncidentLocation solo acepta un label no vacío con coordenadas finitas en rango y planRetry limita los reintentos a los intentos 1..3 con demoras finitas y exige idempotencyKey estable para POST, entonces ninguna entrada (null, error como dato, NaN, Infinity, tipos incorrectos) produce coordenadas inventadas y ningún POST sin clave se repite, sin importar el estado o el Retry-After recibido.",
+      "command": "npm test -- --ci --runInBand course-tests/week-09.test.ts course-tests/public/week-09.test.ts",
+      "observedResult": "74/74 pruebas pasaron (70 propias, 4 públicas) sin red. El intento 4 en adelante devuelve retry false; Retry-After 800 da delayMs 800; Retry-After negativo, NaN, Infinity o mayor a 60 s se ignora y se usa 500 ms; POST con timeout, 429 o 503 sin clave devuelve { retry: false, delayMs: 0, requiresStableIdempotencyKey: true }. Coordenadas 91, NaN, Infinity, '18.46' o new Number(1) caen a la etiqueta manual sin latitude/longitude. Con la función real, las 23 pruebas de Benkis (week-09-geocoding-client) siguieron en verde. tsc marcó dos llamadas de prueba que pasaban undefined explícito (exactOptionalPropertyTypes); se corrigieron en la prueba sin cambiar la firma publicada.",
+      "explanation": "Implementé las dos funciones puras de la semana 9 en src/course-evaluation/index.ts. selectIncidentLocation valida la respuesta cruda que entrega HttpGeocodingClient y devuelve solo source, label, latitude y longitude, o la etiqueta manual. planRetry decide si reintentar y cuánto esperar: estados transitorios, intentos 1 a 3, Retry-After válido hasta 60 s (mismo tope que el adaptador HTTP), backoff 500/1000/2000 ms y POST solo con idempotencyKey estable. Escribí course-tests/week-09.test.ts con los casos límite, la sección 2 de docs/resilience-policy.md y evidence/week-09/engineering.json con por qué esos límites y por qué no se inventan coordenadas."
     },
     {
       "studentId": "a3523110321",

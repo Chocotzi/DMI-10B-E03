@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "week": 9,
+  "commitSha": "dff6e113b614ae4a5311903ce0c1d386595f817e",
+  "decision": "selectIncidentLocation es la única regla de qué ubicación externa es confiable: acepta solo un objeto con label textual no vacío y latitude/longitude numéricas finitas dentro de [-90,90] y [-180,180]; devuelve únicamente esos campos y, ante null, un error representado como dato, un objeto incompleto, NaN/Infinity, coordenadas fuera de rango o tipos incorrectos, devuelve { source: 'manual', label } sin coordenadas. No se inventan coordenadas (ni 0,0, ni el centro del campus, ni las de una consulta anterior) porque una incidencia con coordenadas falsas manda a la cuadrilla al lugar equivocado y no se distingue de una real; la etiqueta que escribió la persona es imprecisa pero honesta. planRetry acota el presupuesto: solo reintenta fallas transitorias (timeout, 408, 429, 500, 502, 503, 504) en los intentos 1 a 3, así que una operación hace como máximo 4 solicitudes; respeta un Retry-After válido (número finito entre 0 y 60 000 ms, el mismo tope MAX_RETRY_AFTER_MS que aplica HttpGeocodingClient) y, sin él, usa backoff exponencial determinista 500/1000/2000 ms; toda demora es finita y ≤ 60 s. Un POST (o cualquier método que no sea GET) sin idempotencyKey textual no vacía nunca se reintenta y devuelve requiresStableIdempotencyKey: true, porque si la respuesta se perdió después del commit, repetirlo sin identidad estable duplicaría el efecto (por ejemplo, dos resoluciones de la misma incidencia). Integración (sección 3): planRetry se aplica dentro de HttpIncidentSyncGateway a cada intercambio de submitAction y fetchSnapshot, siempre con la misma Idempotency-Key; así timeout_after_commit se resuelve como replay (duplicate=true) en una sola llamada sin duplicar el efecto, mientras network e invalid_response quedan para el backoff entre ciclos de SyncPendingOperationsUseCase.",
+  "alternatives": [
+    "Reintentos ilimitados o hasta tener éxito: con el proveedor caído o con 429 sostenido la app nunca termina de crear la incidencia, agota batería y datos, y amplifica la carga sobre un servicio que ya pidió esperar.",
+    "Usar coordenadas por defecto (0,0 o el centro del campus) o la última ubicación conocida cuando el proveedor falla: la incidencia parece geolocalizada pero apunta a un sitio falso; la cuadrilla y los reportes no pueden distinguir el dato inventado del real.",
+    "Reintentar cualquier POST ante timeout porque normalmente no llega al servidor: falla justo en el caso de respuesta perdida después del commit (timeout_after_commit) y duplica la acción.",
+    "Backoff con jitter aleatorio: reparte mejor la carga entre muchos clientes, pero vuelve la función impura y no determinista; se puede añadir en la capa de red (sección 3) sin cambiar el contrato de planRetry.",
+    "Reintentar dentro de SyncPendingOperationsUseCase en lugar del gateway: duplica la lógica en synchronize() y reconcile() y mezcla el presupuesto de una solicitud con la vida de la cola offline.",
+    "Límite de 3 intentos con Retry-After válido acotado a 60 s, backoff 500/1000/2000 ms, POST solo con clave estable y respaldo manual sin coordenadas (elegida)."
+  ],
+  "tradeoff": "Ganamos un comportamiento predecible y verificable: la incidencia siempre se crea (proveedor validado o etiqueta manual), el peor caso de espera está acotado (como máximo 3 reintentos y 60 s por demora) y nunca se duplica un POST ni se guarda una coordenada falsa. A cambio, una falla que dura más que el presupuesto deja la ubicación como texto manual, sin mapa, y la operación queda en la cola offline para un intento posterior; un Retry-After mayor a 60 s se ignora y se usa el backoff, aunque el servidor haya pedido esperar más; y cada POST de la app debe generar y conservar su idempotencyKey.",
+  "requirementIds": [
+    "AC-02",
+    "AC-03",
+    "AC-04"
+  ],
+  "verification": [
+    {
+      "command": "npm test -- --ci --runInBand course-tests/week-09.test.ts course-tests/public/week-09.test.ts",
+      "result": "74/74 pruebas pasaron (70 propias + 4 públicas), puras y sin red: GET contra POST, con y sin Retry-After (válido, 0, 60 000, negativo, NaN, Infinity, > 60 s, texto), intentos 1 a 3 permitidos y 4, 5, 10, 1000 rechazados, intentos inválidos (0, -1, 1.5, NaN), estados transitorios y no transitorios, POST sin clave, con clave vacía, de espacios o no textual; coordenadas en los límites exactos, fuera de rango, NaN, Infinity, como texto, booleanas, null u objeto Number, etiqueta vacía o numérica, y entradas null, arreglo, Error o { status: 429 }.",
+      "evidence": "course-tests/week-09.test.ts y course-tests/public/week-09.test.ts sobre el commit 6ece4a6."
+    },
+    {
+      "command": "npm test -- --ci --runInBand course-tests/week-09-geocoding-client.test.ts",
+      "result": "23/23 pruebas pasaron; el caso de uso ResolveIncidentLocationUseCase ya corre con el selectIncidentLocation real en lugar del sustituto de contrato.",
+      "evidence": "Salida de Jest: 'Week 09 — ResolveIncidentLocationUseCase with real selectIncidentLocation'."
+    },
+    {
+      "command": "npm run typecheck && npm run lint && npm run check:architecture",
+      "result": "tsc sin errores (incluye exactOptionalPropertyTypes), eslint sin errores ni advertencias en los archivos modificados y 'Architecture boundaries pass'.",
+      "evidence": "src/course-evaluation/index.ts conserva la firma publicada de planRetry y selectIncidentLocation."
+    },
+    {
+      "command": "WEEK09_WRITE_REPORTS=1 WEEK09_RETRY_COMMIT_SHA=dff6e113b614ae4a5311903ce0c1d386595f817e npm test -- --ci --runInBand course-tests/week-09-retry-integration.test.ts",
+      "result": "6/6 pruebas pasaron contra el backend real: 429 sostenido con Retry-After real y rendición al 4º intento; 500 transitorios recuperados con backoff 500/1000 ms; timeout_after_commit en una resolución real resuelto como duplicate=true sin duplicar el efecto, por el gateway y por SyncPendingOperationsUseCase en un solo ciclo; reconcile() recuperado de un 429; desconexión con un solo intento.",
+      "evidence": "reports/week-09/retry-metrics.json y reports/week-09/fault-injection.json, generados por la prueba sobre el commit dff6e11."
+    }
+  ]
+}

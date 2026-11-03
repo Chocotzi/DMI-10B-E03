@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "week": 9,
+  "commitSha": "dff6e113b614ae4a5311903ce0c1d386595f817e",
+  "generatedAt": "2026-11-03T05:24:15.365Z",
+  "checks": [
+    {
+      "id": "get-429-retry-after-real",
+      "status": "pass",
+      "scenarioType": "boundary",
+      "command": "fetchSnapshot con scenario 'rate_limited' contra el backend real",
+      "expected": "Las 3 primeras solicitudes reintentan con delayMs=1000 (Retry-After real); la 4ª se rinde y reporta rate_limited.",
+      "observed": "4 intentos registrados (#1:429, #2:429, #3:429, #4:429); resultado final unavailable/rate_limited.",
+      "evidence": "course-tests/week-09-retry-integration.test.ts — \"fetchSnapshot: 429 sostenido...\""
+    },
+    {
+      "id": "post-500-recupera-sin-duplicar",
+      "status": "pass",
+      "scenarioType": "boundary",
+      "command": "submitAction('resolve') con los 2 primeros intentos forzados a 500 contra el backend real",
+      "expected": "Backoff 500 ms, 1000 ms y éxito al 3er intento; el historial del servidor registra la clave una sola vez.",
+      "observed": "status por intento: 500,500,201; appliedOperationIds con 1 ocurrencia de la clave.",
+      "evidence": "course-tests/week-09-retry-integration.test.ts — \"submitAction: se recupera de 500 transitorios...\""
+    },
+    {
+      "id": "timeout-after-commit-resolve-no-duplica",
+      "status": "pass",
+      "scenarioType": "failure",
+      "command": "submitAction('resolve') con scenario 'timeout_after_commit' y timeoutMs=300 contra el backend real",
+      "expected": "El 1er intento aborta por timeout del cliente; el 2º, con la misma Idempotency-Key, recibe duplicate=true sin repetir el efecto en el servidor.",
+      "observed": "intentos: timeout, 200(duplicate=true); versión remota avanzó una sola vez (3 -> 4); 1 sola entrada de la clave en el historial.",
+      "evidence": "course-tests/week-09-retry-integration.test.ts — \"timeout_after_commit en una resolución real...\""
+    },
+    {
+      "id": "usecase-resolve-respuesta-perdida-un-ciclo",
+      "status": "pass",
+      "scenarioType": "nominal",
+      "command": "SyncPendingOperationsUseCase.execute() con una resolución encolada y scenario timeout_after_commit",
+      "expected": "confirmed/replayed_duplicate en el PRIMER ciclo (sin esperar a un reintento de ciclo completo); cola vacía al terminar.",
+      "observed": "outcomes=[{\"operationId\":\"op-lost-resolve-01\",\"incidentId\":\"campus-inc-104\",\"result\":\"confirmed\",\"reason\":\"replayed_duplicate\",\"appliedWith\":\"op-lost-resolve-01\"}]; failedCycles=0; cola final vacía.",
+      "evidence": "course-tests/week-09-retry-integration.test.ts — \"SyncPendingOperationsUseCase.synchronize()...\""
+    },
+    {
+      "id": "reconcile-fetchsnapshot-429-recupera",
+      "status": "pass",
+      "scenarioType": "boundary",
+      "command": "reconcile() tras version_conflict, con el 1er GET forzado a 429 contra el backend real",
+      "expected": "El GET de reconciliación reintenta igual que un submitAction; la operación local se rebasea y confirma sin perderse.",
+      "observed": "GET status por intento: 429,200; outcome final confirmed/rebased_independent_changes.",
+      "evidence": "course-tests/week-09-retry-integration.test.ts — \"reconcile(): tras un version_conflict...\""
+    },
+    {
+      "id": "desconexion-un-solo-intento",
+      "status": "pass",
+      "scenarioType": "failure",
+      "command": "submitAction contra un puerto sin servidor (baseUrl: 'http://127.0.0.1:1')",
+      "expected": "planRetry no tiene veredicto para \"network\": un solo intento, sin reintento local; el fallo se reporta para el ciclo de sincronización.",
+      "observed": "1 intento registrado (status=network, retry=false); outcome unavailable/network.",
+      "evidence": "course-tests/week-09-retry-integration.test.ts — \"una desconexión real...\""
+    }
+  ]
+}

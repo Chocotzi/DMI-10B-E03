@@ -1,0 +1,230 @@
+{
+  "schemaVersion": 1,
+  "week": 9,
+  "commitSha": "dff6e113b614ae4a5311903ce0c1d386595f817e",
+  "generatedAt": "2026-11-03T05:24:15.358Z",
+  "attempts": [
+    {
+      "incidentId": "campus-inc-101",
+      "method": "GET",
+      "attempt": 1,
+      "status": 429,
+      "durationMs": 2,
+      "retry": true,
+      "delayMs": 1000
+    },
+    {
+      "incidentId": "campus-inc-101",
+      "method": "GET",
+      "attempt": 2,
+      "status": 429,
+      "durationMs": 1,
+      "retry": true,
+      "delayMs": 1000
+    },
+    {
+      "incidentId": "campus-inc-101",
+      "method": "GET",
+      "attempt": 3,
+      "status": 429,
+      "durationMs": 1,
+      "retry": true,
+      "delayMs": 1000
+    },
+    {
+      "incidentId": "campus-inc-101",
+      "method": "GET",
+      "attempt": 4,
+      "status": 429,
+      "durationMs": 2,
+      "retry": false,
+      "delayMs": 0
+    },
+    {
+      "incidentId": "campus-inc-102",
+      "correlationId": "resolve-recovers-01",
+      "method": "POST",
+      "attempt": 1,
+      "status": 500,
+      "durationMs": 0,
+      "retry": true,
+      "delayMs": 500
+    },
+    {
+      "incidentId": "campus-inc-102",
+      "correlationId": "resolve-recovers-01",
+      "method": "POST",
+      "attempt": 2,
+      "status": 500,
+      "durationMs": 0,
+      "retry": true,
+      "delayMs": 1000
+    },
+    {
+      "incidentId": "campus-inc-102",
+      "correlationId": "resolve-recovers-01",
+      "method": "POST",
+      "attempt": 3,
+      "status": 201,
+      "durationMs": 1,
+      "retry": false,
+      "delayMs": 0
+    },
+    {
+      "incidentId": "campus-inc-102",
+      "method": "GET",
+      "attempt": 1,
+      "status": 200,
+      "durationMs": 0,
+      "retry": false,
+      "delayMs": 0
+    },
+    {
+      "incidentId": "campus-inc-103",
+      "correlationId": "resolve-lost-response-01",
+      "method": "POST",
+      "attempt": 1,
+      "status": "timeout",
+      "durationMs": 315,
+      "retry": true,
+      "delayMs": 500
+    },
+    {
+      "incidentId": "campus-inc-103",
+      "correlationId": "resolve-lost-response-01",
+      "method": "POST",
+      "attempt": 2,
+      "status": 200,
+      "durationMs": 1,
+      "retry": false,
+      "delayMs": 0
+    },
+    {
+      "incidentId": "campus-inc-103",
+      "method": "GET",
+      "attempt": 1,
+      "status": 200,
+      "durationMs": 1,
+      "retry": false,
+      "delayMs": 0
+    },
+    {
+      "incidentId": "campus-inc-104",
+      "method": "GET",
+      "attempt": 1,
+      "status": 200,
+      "durationMs": 1,
+      "retry": false,
+      "delayMs": 0
+    },
+    {
+      "incidentId": "campus-inc-104",
+      "correlationId": "op-lost-resolve-01",
+      "method": "POST",
+      "attempt": 1,
+      "status": "timeout",
+      "durationMs": 300,
+      "retry": true,
+      "delayMs": 500
+    },
+    {
+      "incidentId": "campus-inc-104",
+      "correlationId": "op-lost-resolve-01",
+      "method": "POST",
+      "attempt": 2,
+      "status": 200,
+      "durationMs": 2,
+      "retry": false,
+      "delayMs": 0
+    },
+    {
+      "incidentId": "campus-inc-104",
+      "method": "GET",
+      "attempt": 1,
+      "status": 200,
+      "durationMs": 1,
+      "retry": false,
+      "delayMs": 0
+    },
+    {
+      "incidentId": "campus-inc-105",
+      "method": "GET",
+      "attempt": 1,
+      "status": 200,
+      "durationMs": 1,
+      "retry": false,
+      "delayMs": 0
+    },
+    {
+      "incidentId": "campus-inc-105",
+      "correlationId": "op-reconcile-429-01",
+      "method": "POST",
+      "attempt": 1,
+      "status": 409,
+      "durationMs": 0,
+      "retry": false,
+      "delayMs": 0
+    },
+    {
+      "incidentId": "campus-inc-105",
+      "method": "GET",
+      "attempt": 1,
+      "status": 429,
+      "durationMs": 0,
+      "retry": true,
+      "delayMs": 1000
+    },
+    {
+      "incidentId": "campus-inc-105",
+      "method": "GET",
+      "attempt": 2,
+      "status": 200,
+      "durationMs": 1,
+      "retry": false,
+      "delayMs": 0
+    },
+    {
+      "incidentId": "campus-inc-105",
+      "correlationId": "op-reconcile-429-01:rebase:v4",
+      "method": "POST",
+      "attempt": 1,
+      "status": 201,
+      "durationMs": 1,
+      "retry": false,
+      "delayMs": 0
+    },
+    {
+      "incidentId": "campus-inc-001",
+      "correlationId": "disconnected-attempt-01",
+      "method": "POST",
+      "attempt": 1,
+      "status": "network",
+      "durationMs": 2,
+      "retry": false,
+      "delayMs": 0
+    }
+  ],
+  "checks": [
+    {
+      "id": "intentos-acotados",
+      "status": "pass",
+      "scenarioType": "boundary",
+      "command": "WEEK09_WRITE_REPORTS=1 npm test -- --ci --runInBand course-tests/week-09-retry-integration.test.ts",
+      "evidence": "Máximo de intento observado: 4 (RETRY_MAX_ATTEMPT=3 + 1); 21 intentos registrados en total."
+    },
+    {
+      "id": "demoras-de-reintento",
+      "status": "pass",
+      "scenarioType": "failure",
+      "command": "WEEK09_WRITE_REPORTS=1 npm test -- --ci --runInBand course-tests/week-09-retry-integration.test.ts",
+      "evidence": "delayMs decididos por planRetry: 1000, 500 ms (Retry-After real 1000; backoff 500/1000); todas finitas y <= 60000."
+    },
+    {
+      "id": "telemetria-sanitizada",
+      "status": "pass",
+      "scenarioType": "nominal",
+      "command": "WEEK09_WRITE_REPORTS=1 npm test -- --ci --runInBand course-tests/week-09-retry-integration.test.ts",
+      "evidence": "Campos por intento: attempt, correlationId, delayMs, durationMs, incidentId, method, retry, status; sin cuerpos, encabezados ni tokens (redactForTelemetry)."
+    }
+  ]
+}

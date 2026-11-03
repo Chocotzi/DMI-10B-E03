@@ -54,18 +54,30 @@
     },
     {
       "studentId": "a3523110321",
-      "commitShas": [],
+      "commitShas": [
+        "f5e46e9ad34373785e40f5981142b27ef267a24c",
+        "dff6e113b614ae4a5311903ce0c1d386595f817e"
+      ],
       "files": [
         "src/campusops/infrastructure/HttpIncidentSyncGateway.ts",
         "src/campusops/application/SyncPendingOperationsUseCase.ts",
-        "course-tests/week-09-retry-integration.test.ts"
+        "course-tests/week-09-retry-integration.test.ts",
+        "docs/resilience-policy.md",
+        "reports/week-09/retry-metrics.json",
+        "reports/week-09/fault-injection.json",
+        "evidence/week-09/engineering.json"
       ],
-      "tests": [],
+      "tests": [
+        "npm test -- --ci --runInBand course-tests/week-09-retry-integration.test.ts",
+        "npm run typecheck",
+        "npm run lint",
+        "npm run check:architecture"
+      ],
       "reviews": [],
-      "prediction": "PENDIENTE: a3523110321 llena este bloque con su commit real de reintentos y respuesta perdida.",
-      "command": "PENDIENTE: comando que a3523110321 ejecutó.",
-      "observedResult": "PENDIENTE: resultado que a3523110321 observó.",
-      "explanation": "PENDIENTE: a3523110321 describe su aportación real."
+      "prediction": "Si cada intercambio de HttpIncidentSyncGateway pasa por planRetry y reenvía siempre la misma Idempotency-Key, entonces en timeout_after_commit el segundo intento recibe duplicate=true y la resolución queda aplicada una sola vez en el servidor dentro de un solo execute(); un 429 sostenido se rinde tras 4 solicitudes respetando el Retry-After real (1000 ms) y una desconexión hace un único intento.",
+      "command": "WEEK09_WRITE_REPORTS=1 WEEK09_RETRY_COMMIT_SHA=dff6e113b614ae4a5311903ce0c1d386595f817e npm test -- --ci --runInBand course-tests/week-09-retry-integration.test.ts",
+      "observedResult": "6/6 pruebas pasaron contra el backend del curso levantado localmente: un 429 sostenido en fetchSnapshot hizo 4 solicitudes (3 reintentos con delayMs 1000 tomado del Retry-After real) y se rindió como rate_limited; un submitAction('resolve') con dos 500 inyectados se recuperó al 3er intento con backoff 500/1000 ms y la clave quedó una sola vez en el historial; con timeout_after_commit y timeoutMs 300 el 1er intento abortó por timeout y el 2º, con la misma Idempotency-Key, recibió 200 con duplicate=true: la versión avanzó una sola vez y la incidencia quedó resolved una vez; SyncPendingOperationsUseCase confirmó esa resolución como replayed_duplicate en el primer execute() con la cola vacía; reconcile() se recuperó de un 429 pasajero en su GET y confirmó rebased_independent_changes; una desconexión real hizo un solo intento (network). La primera corrida falló porque la prueba no pasaba fetchImpl al gateway y esperaba 201 en el replay (el backend responde 200); se corrigió en la prueba, sin cambiar el gateway. tsc, check:architecture y eslint de los archivos tocados sin errores.",
+      "explanation": "Conecté planRetry a la red real: HttpIncidentSyncGateway envuelve submitAction y fetchSnapshot en un ciclo acotado que reintenta timeout/408/429/5xx con el Retry-After del backend o backoff 500/1000/2000 ms, con la misma Idempotency-Key, y se rinde en el intento 4; network e invalid_response no se reintentan y quedan para el ciclo de SyncPendingOperationsUseCase. Así synchronize() y reconcile() quedan cubiertos. Cada intento se reporta sanitizado con redactForTelemetry. Escribí la prueba de integración contra el backend real (incluida una resolución con timeout_after_commit sin duplicar) y la sección 3 de docs/resilience-policy.md, que une la política de proveedor/caché y los límites de planRetry."
     }
   ]
 }

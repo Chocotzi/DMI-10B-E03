@@ -1,0 +1,29 @@
+stateDiagram-v2
+  [*] --> Idle: Autenticado en CampusOps
+
+  Idle --> Loading: Consultar lista / Seleccionar incidencia
+  
+  Loading --> Success: Datos recibidos con éxito (items > 0)
+  Loading --> Empty: Respuesta válida sin registros (items vacíos o payload nulo)
+  Loading --> ErrorRecoverable: Error HTTP (500, timeout, respuesta inválida)
+  Loading --> Cancelled: Usuario presiona Cancelar o Volver
+
+  Empty --> Loading: Usuario pulsa Reintentar o Refrescar
+  Empty --> Idle: Usuario navega a Crear Incidencia
+
+  ErrorRecoverable --> Loading: Usuario pulsa Reintentar (recuperación accesible)
+  ErrorRecoverable --> Idle: Usuario pulsa Volver
+
+  Cancelled --> Idle: Retorno a vista estable sin spinner perpetuo
+
+  Success --> Loading: Usuario refresca datos o cambia de incidencia
+  Success --> OfflineNotice: Pérdida de red detectada
+
+  OfflineNotice --> Success: Conexión recuperada / Consulta en caché local
+  OfflineNotice --> PendingSync: Técnico registra acción sin conexión (cola local)
+
+  PendingSync --> Loading: Reconexión activa sincronización en segundo plano
+  PendingSync --> ConflictDetected: Sincronización detecta incompatibilidad en campo work
+
+  ConflictDetected --> Success: Conflicto alertado al usuario sin pérdida silenciosa
+  ConflictDetected --> ErrorRecoverable: Error irrecuperable en sincronización

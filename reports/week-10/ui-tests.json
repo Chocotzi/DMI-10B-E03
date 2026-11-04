@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "week": 10,
+  "commitSha": "b279b198137b3fb6ced59b9fe1d93b0f0dca729a",
+  "generatedAt": "2026-11-03T20:18:28-06:00",
+  "checks": [
+    {
+      "id": "ui-carga-accesible-cancelacion",
+      "status": "pass",
+      "scenarioType": "boundary",
+      "command": "npm test -- --ci --runInBand course-tests/week-10-ui.test.tsx -t 'IncidentListScreen renders accessible loading state and allows cancellation'",
+      "evidence": "PASS: ActivityIndicator renderiza con rol progressbar y etiqueta 'Cargando lista de incidencias'; al presionar Cancelar transiciona al mensaje 'Carga cancelada por el usuario.' sin dejar spinners permanentes."
+    },
+    {
+      "id": "ui-estado-exito-accesibilidad",
+      "status": "pass",
+      "scenarioType": "nominal",
+      "command": "npm test -- --ci --runInBand course-tests/week-10-ui.test.tsx -t 'IncidentListScreen renders success state with accessible items and location'",
+      "evidence": "PASS: Lista renderiza las incidencias con formato accesible, rol de botón, título, estado, categoría y ubicación manual 'Edificio B - Lab 3'."
+    },
+    {
+      "id": "ui-estado-vacio-accesible",
+      "status": "pass",
+      "scenarioType": "boundary",
+      "command": "npm test -- --ci --runInBand course-tests/week-10-ui.test.tsx -t 'IncidentListScreen renders accessible empty state when items list is empty'",
+      "evidence": "PASS: Cuando no hay registros se presenta el mensaje accesible 'No hay incidencias.' sin colapsar el layout."
+    },
+    {
+      "id": "ui-recuperacion-error-reintento",
+      "status": "pass",
+      "scenarioType": "failure",
+      "command": "npm test -- --ci --runInBand course-tests/week-10-ui.test.tsx -t 'IncidentListScreen renders recoverable error with working retry action'",
+      "evidence": "PASS: Ante timeout de red se presenta mensaje de error recuperable con rol alert y botón Reintentar que recarga la lista exitosamente en el segundo intento."
+    },
+    {
+      "id": "ui-estados-sincronizacion-offline-conflicto",
+      "status": "pass",
+      "scenarioType": "boundary",
+      "command": "npm test -- --ci --runInBand course-tests/week-10-ui.test.tsx -t 'IncidentListScreen reflects offline, pending sync, and conflict states'",
+      "evidence": "PASS: Banners y badges de desconexión, operaciones encoladas y conflicto de asignación renderizan con textos accesibles sin pérdida silenciosa."
+    },
+    {
+      "id": "ui-detalle-recuperacion-navegacion",
+      "status": "pass",
+      "scenarioType": "nominal",
+      "command": "npm test -- --ci --runInBand course-tests/week-10-ui.test.tsx -t 'IncidentDetailScreen renders loading, error recovery, and success details'",
+      "evidence": "PASS: IncidentDetailScreen maneja recuperación tras fallo HTTP 500 con botón Reintentar y navegación de retorno hacia la lista."
+    }
+  ]
+}

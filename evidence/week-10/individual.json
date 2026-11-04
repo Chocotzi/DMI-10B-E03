@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "week": 10,
+  "teamId": "DMI-10B-E03",
+  "members": [
+    {
+      "studentId": "a3523110321",
+      "commitShas": [
+        "b279b198137b3fb6ced59b9fe1d93b0f0dca729a"
+      ],
+      "files": [
+        "docs/ui-state-machine.mmd",
+        "src/campusops/ui/IncidentListScreen.tsx",
+        "src/campusops/ui/IncidentDetailScreen.tsx",
+        "course-tests/week-10-ui.test.tsx",
+        "reports/week-10/ui-tests.json"
+      ],
+      "tests": [
+        "npm test -- --ci --runInBand course-tests/week-10-ui.test.tsx",
+        "npm run typecheck",
+        "npm run lint",
+        "npm run check:architecture"
+      ],
+      "reviews": [],
+      "prediction": "La interfaz móvil representará de forma accesible los 8 estados (carga, éxito, vacío, error, cancelación, offline, pendiente, conflicto) permitiendo recuperación y reintento sin bloqueos permanentes.",
+      "command": "npm test -- --ci --runInBand course-tests/week-10-ui.test.tsx",
+      "observedResult": "6/6 pruebas pasaron exitosamente en course-tests/week-10-ui.test.tsx comprobando cancelación, reintento, etiquetas accesibles y banners de sincronización.",
+      "explanation": "Diseñé el diagrama formal FSM en docs/ui-state-machine.mmd y apliqué los estados y roles de accesibilidad en IncidentListScreen e IncidentDetailScreen, verificando el comportamiento con pruebas reproducibles."
+    },
+    {
+      "studentId": "a3523110227",
+      "commitShas": [
+        "451af5eafdba5339fcf0e82376f0ef22fdd579ce"
+      ],
+      "files": [
+        "src/course-evaluation/index.ts",
+        "course-tests/week-10-remote-responses.test.ts",
+        "evidence/week-10/engineering.json"
+      ],
+      "tests": [
+        "npm test -- --ci --runInBand course-tests/public/week-10.test.ts"
+      ],
+      "reviews": [],
+      "prediction": "Una respuesta obsoleta con requestId distinto a la selección activa debe descartarse sin sobreescribir el estado de la incidencia seleccionada.",
+      "command": "npm test -- --ci --runInBand course-tests/public/week-10.test.ts",
+      "observedResult": "Asignación individual para la implementación del reductor de respuestas remotas.",
+      "explanation": "Asignado a la lógica de reducción de respuestas remotas y resolución de concurrencia fuera de orden."
+    },
+    {
+      "studentId": "a3523110609",
+      "commitShas": [
+        "6ece4a67dcc7abf619702367d5d669e5c73e1687"
+      ],
+      "files": [
+        "src/security/redactForTelemetry.ts",
+        "course-tests/week-10-telemetry.test.ts",
+        "reports/week-10/log-sanitization.json"
+      ],
+      "tests": [
+        "npm run check:secrets"
+      ],
+      "reviews": [],
+      "prediction": "La telemetría técnica debe conservar correlationId e información de error pero ocultar el 100% de datos sensibles normalizados.",
+      "command": "npm run check:secrets",
+      "observedResult": "Asignación individual para la verificación de sanitización de logs y observabilidad segura.",
+      "explanation": "Asignado al control de observabilidad segura, correlación sintética y exclusión de datos personales."
+    }
+  ]
+}
